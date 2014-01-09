@@ -40,7 +40,7 @@
 				<?php if ( has_nav_menu( 'primary_navigation' ) ): ?>
 				<?php wp_nav_menu( array('theme_location' => 'primary_navigation','container' => false,'menu_class' => 'primenu','echo' => true,'before' => '','after' => '','link_before' => '','link_after' => '','depth' => 3,'items_wrap' => '<ul class="primenu">%3$s</ul>')); ?>
 				<?php else: ?>
-				<p class="ft-nomenus">Please Setup Your Menus : Dashboard -> Appearance -> Menus</p>
+				<p class="ft-nomenus">Please Setup Your Menus : Dashboard --> Appearance --> Menus</p>
 				<?php endif; ?>
 			</div>
 			<div class="ft-icons">
