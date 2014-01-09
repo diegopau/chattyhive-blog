@@ -1,0 +1,420 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Inspirin\n"
+"POT-Creation-Date: 2013-07-30 09:06+0700\n"
+"PO-Revision-Date: 2013-07-30 09:06+0700\n"
+"Last-Translator: \n"
+"Language-Team: FameThemes <famethemes@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.5\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: 404.php:11
+msgid "Page Not Found"
+msgstr ""
+
+#: 404.php:12
+msgid ""
+"Unfortunately, the page you've requested cannot be displayed. It appears "
+"that you've lost your way either through an outdated link or a typo on the "
+"page you were trying to reach. Please feel free to return to the front page "
+"or use the search box in the upper area of the page to find the information "
+"you were looking for. We are very sorry for any inconvenience."
+msgstr ""
+
+#: archive.php:12 index.php:11
+msgid "Sorry, no results were found."
+msgstr ""
+
+#: archive.php:18
+#, php-format
+msgid "Daily Archives: %s"
+msgstr ""
+
+#: archive.php:19
+#, php-format
+msgid "Monthly Archives: %s"
+msgstr ""
+
+#: archive.php:20
+#, php-format
+msgid "Yearly Archives: %s"
+msgstr ""
+
+#: archive.php:21
+msgid "Posts Tagged"
+msgstr ""
+
+#: archive.php:23
+#, php-format
+msgid "Posts by: %s"
+msgstr ""
+
+#: archive.php:24
+msgid "Category"
+msgstr ""
+
+#: comments.php:7
+#, php-format
+msgid "<cite class=\"fn\">%s</cite>"
+msgstr ""
+
+#: comments.php:8
+msgid "on"
+msgstr ""
+
+#: comments.php:8
+#, php-format
+msgid "%1$s"
+msgstr ""
+
+#: comments.php:16
+msgid "Your comment is awaiting moderation."
+msgstr ""
+
+#: comments.php:18
+msgid "(Edit)"
+msgstr ""
+
+#: comments.php:28
+msgid "Please do not load this page directly. Thanks!"
+msgstr ""
+
+#: comments.php:33
+msgid "This post is password protected. Enter the password to view comments."
+msgstr ""
+
+#: comments.php:44
+msgid "There Are"
+msgstr ""
+
+#: comments.php:44 footer.php:13
+msgid "0 Comments"
+msgstr ""
+
+#: comments.php:44 footer.php:13
+msgid "1 Comment"
+msgstr ""
+
+#: comments.php:44 footer.php:13
+msgid "Comments"
+msgstr ""
+
+#: comments.php:44
+msgid "On This Article."
+msgstr ""
+
+#: comments.php:51
+msgid "&larr; Older comments"
+msgstr ""
+
+#: comments.php:52
+msgid "Newer comments &rarr;"
+msgstr ""
+
+#: comments.php:61
+msgid "Comments are closed."
+msgstr ""
+
+#: footer.php:7
+msgid "Top Article"
+msgstr ""
+
+#: footer.php:8
+msgid "Don't Miss"
+msgstr ""
+
+#: footer.php:13
+msgid "On"
+msgstr ""
+
+#: footer.php:13
+msgid "With"
+msgstr ""
+
+#: footer.php:35
+msgid "Powered by Wordpress. Designed by"
+msgstr ""
+
+#: functions.php:33
+msgid "Primary Navigation"
+msgstr ""
+
+#: functions.php:34
+msgid "Footer Navigation"
+msgstr ""
+
+#: page-archives.php:19
+msgid "Recent Posts"
+msgstr ""
+
+#: page-archives.php:32
+msgid "Popular Posts"
+msgstr ""
+
+#: page-archives.php:45
+msgid "All Pages"
+msgstr ""
+
+#: page-archives.php:51
+msgid "Archives by Categories"
+msgstr ""
+
+#: page-archives.php:69
+msgid "Monthly Archives"
+msgstr ""
+
+#: search.php:12 search.php:18
+msgid "Search Results for"
+msgstr ""
+
+#: search.php:13
+msgid "Sorry, no results were found. Please try again with another keyword."
+msgstr ""
+
+#: searchform.php:2
+msgid "Search on"
+msgstr ""
+
+#: searchform.php:3
+msgid "Type keyword and hit enter..."
+msgstr ""
+
+#: admin/classes/class.options_machine.php:556
+msgid "Last Backup : "
+msgstr ""
+
+#: admin/front-end/options.php:56 admin/front-end/options.php:80
+msgid "Save Changes"
+msgstr ""
+
+#: admin/front-end/options.php:81
+msgid "Options Reset"
+msgstr ""
+
+#: lib/theme-functions/breadcrumbs.php:15
+msgid "Homepage"
+msgstr ""
+
+#: lib/theme-functions/breadcrumbs.php:82
+#, php-format
+msgid "Search Results for: %s"
+msgstr ""
+
+#: lib/theme-functions/breadcrumbs.php:87
+#, php-format
+msgid "Tag Archives: %s"
+msgstr ""
+
+#: lib/theme-functions/breadcrumbs.php:94
+#, php-format
+msgid "Author Archives: %s"
+msgstr ""
+
+#: lib/theme-functions/breadcrumbs.php:99
+msgid "Not Found"
+msgstr ""
+
+#: lib/theme-functions/breadcrumbs.php:105
+msgid "page "
+msgstr ""
+
+#: lib/theme-functions/related-posts.php:5
+msgid "Related Posts"
+msgstr ""
+
+#: lib/theme-loops/loop-archive.php:9 lib/theme-loops/loop-search.php:9
+#: lib/theme-loops/loop.php:9
+msgid "Continue Reading"
+msgstr ""
+
+#: lib/theme-loops/loop-single.php:13
+msgid "Post Tags"
+msgstr ""
+
+#: lib/theme-loops/loop-single.php:20
+msgid "&larr; Previous Post"
+msgstr ""
+
+#: lib/theme-loops/loop-single.php:21
+msgid "Next Post &rarr;"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:18
+msgid "A widget that displays 125x125 ads."
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:24
+msgid "WFT - 125x125 Ads"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:147
+#: lib/theme-widgets/widget-flickrphotos.php:107
+#: lib/theme-widgets/widget-newsletter.php:113
+#: lib/theme-widgets/widget-popularposts.php:121
+#: lib/theme-widgets/widget-randomposts.php:111
+#: lib/theme-widgets/widget-recentposts.php:91
+msgid "Title:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:152
+msgid "Ad 1 image url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:157
+msgid "Ad 1 link url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:162
+msgid "Ad 2 image url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:167
+msgid "Ad 2 link url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:172
+msgid "Ad 3 image url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:177
+msgid "Ad 3 link url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:182
+msgid "Ad 4 image url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:187
+msgid "Ad 4 link url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:192
+msgid "Ad 5 image url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:197
+msgid "Ad 5 link url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:202
+msgid "Ad 6 image url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:207
+msgid "Ad 6 link url:"
+msgstr ""
+
+#: lib/theme-widgets/widget-ads.php:212
+msgid "Randomize ads order?"
+msgstr ""
+
+#: lib/theme-widgets/widget-flickrphotos.php:19
+msgid "A widget that displays Flickr photos."
+msgstr ""
+
+#: lib/theme-widgets/widget-flickrphotos.php:25
+msgid "WFT - Flickr"
+msgstr ""
+
+#: lib/theme-widgets/widget-flickrphotos.php:113
+#: lib/theme-widgets/widget-newsletter.php:118
+msgid "Description:"
+msgstr ""
+
+#: lib/theme-widgets/widget-flickrphotos.php:119
+msgid "Flickr ID:"
+msgstr ""
+
+#: lib/theme-widgets/widget-flickrphotos.php:121
+msgid "Look your ID here,"
+msgstr ""
+
+#: lib/theme-widgets/widget-flickrphotos.php:129
+msgid "Number of Photos:"
+msgstr ""
+
+#: lib/theme-widgets/widget-flickrphotos.php:132
+msgid "Up to 10 photos allowed."
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:16
+msgid "A widget that displays a newsletter form."
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:20
+msgid "WFT - Newsletter"
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:104
+msgid "Optin Headline"
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:105
+msgid ""
+"Explain to people why people should signup to your newsletter. Be as concise "
+"as possible, and <em>very</em> convincing!"
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:106
+msgid ""
+"Paste your optin code here (read documentation if you need help finding your "
+"optin code)"
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:123
+msgid "Optin Code:"
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:129
+msgid "Show on single post only"
+msgstr ""
+
+#: lib/theme-widgets/widget-newsletter.php:134
+msgid "Don't wrap to edge of content area"
+msgstr ""
+
+#: lib/theme-widgets/widget-popularposts.php:20
+msgid "A widget that displays popular posts."
+msgstr ""
+
+#: lib/theme-widgets/widget-popularposts.php:26
+msgid "WFT - Popular Posts"
+msgstr ""
+
+#: lib/theme-widgets/widget-popularposts.php:73
+msgid "There are no posts available right now."
+msgstr ""
+
+#: lib/theme-widgets/widget-popularposts.php:127
+#: lib/theme-widgets/widget-randomposts.php:117
+msgid "Number:"
+msgstr ""
+
+#: lib/theme-widgets/widget-randomposts.php:20
+msgid "A widget that displays random posts."
+msgstr ""
+
+#: lib/theme-widgets/widget-randomposts.php:26
+msgid "WFT - Random Posts"
+msgstr ""
+
+#: lib/theme-widgets/widget-recentposts.php:24
+msgid "A widget that displays recent posts."
+msgstr ""
+
+#: lib/theme-widgets/widget-recentposts.php:28
+msgid "WFT - Recent Posts"
+msgstr ""
+
+#: lib/theme-widgets/widget-recentposts.php:96
+msgid "Filter by Category:"
+msgstr ""
+
+#: lib/theme-widgets/widget-recentposts.php:107
+msgid "Number of posts:"
+msgstr ""
