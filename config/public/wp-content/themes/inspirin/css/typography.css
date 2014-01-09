@@ -1,0 +1,33 @@
+/* Typography */
+h1,h2,h3,h4,h5,h6{font-family:'Bitter',serif;font-weight:700;color:#444;}
+h1{font-size:40px;line-height:48px;margin:0 0 20px 0}
+h2{font-size:34px;line-height:42px;margin:0 0 20px 0}
+h3{font-size:28px;line-height:36px;margin:0 0 15px 0}
+h4{font-size:24px;line-height:32px;margin:0 0 15px 0}
+h5{font-size:20px;line-height:28px;margin:0 0 10px 0}
+h6{font-size:20px;line-height:28px;margin:0 0 10px 0}
+/* Logo */
+.ct-logo{font-family:'Bitter',serif;font-weight:700;font-size:24px;line-height:40px}
+/* Menus */
+.ft-menu,.ft-ftmenu{font-family: 'Bitter',serif;font-weight:700}
+/* Post Titles */
+.hentry .ft-ptitle{font-size:44px;line-height:50px}
+/* Widgets */
+.widget .widget-title{font-size:20px;line-height:20px}
+#footer .widget .widget-title{font-size:24px}
+/* Top Article */
+.ft-rdposts{font-family: 'Bitter', serif;font-weight:700}
+.ft-rdtitle p{font-size:20px;line-height:26px;}
+.ft-rdtitle span{font-size:14px;line-height:16px;}
+.ft-rdpost p {font-size:20px;line-height:26px}
+.ft-rdpost span{font-size: 14px;line-height:14px}
+/* Archive & Search */
+.ft-mptitle{font-size:44px;line-height:50px}
+/* Responsive */
+@media only screen and (max-width: 600px) {
+h1{font-size:30px;line-height:36px}
+h2{font-size:28px;line-height:34px}
+h3{font-size:26px;line-height:32px}
+.hentry .ft-ptitle{font-size:34px;line-height:40px}
+.ft-mptitle{font-size:34px;line-height:40px}
+}
