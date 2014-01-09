@@ -32,7 +32,6 @@
 	<div class="ft-copyright clearfix">
 		<div class="wrapper">
 			<div class="ft-cptext"><?php if(!empty($smof_data['ft_footer_text'])): ?><?php echo $smof_data['ft_footer_text']; ?><?php endif; ?></div>
-			<div class="ft-cplogo"><?php _e('Powered by Wordpress. Designed by','ft') ?> <a target="_blank" href="http://www.famethemes.com/"><img src="<?php echo get_template_directory_uri(); ?>/images/copyright/famethemes.png" width="48" height="25" atl="FameThemes" /></a></div>
 		</div>
 	</div>
 </footer>
