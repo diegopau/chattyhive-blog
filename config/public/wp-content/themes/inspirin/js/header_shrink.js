@@ -2,7 +2,7 @@
     $('.wrapper').data('size','big');
 });
 
-$(window).scroll(function(){
+(window).scroll(function($){
     var $nav = $('.wrapper');
     if ($('body').scrollTop() > 0) {
         if ($nav.data('size') == 'big') {
