@@ -17,8 +17,8 @@ jQuery(document).ready(function ($) {
 		} else {
 		    if ($nav.data('size') == 'small') {
 		        $nav.data('size','big').stop().animate({
-		            marginTop:'5px',
-					marginBottom:'5px'
+		            marginTop:'11px',
+					marginBottom:'11px'
 		        }, 100);
 		    }  
 		}
