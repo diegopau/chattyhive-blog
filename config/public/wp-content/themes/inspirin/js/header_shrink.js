@@ -1,12 +1,12 @@
 jQuery(document).ready(function ($) {
 	
 	$(function(){
-		$('#header').data('size','big');
+		$('.wrapper').data('size','big');
 	});
 
 	$(window).scroll(function(){
 	console.log($(window).scrollTop());
-		var $nav = $('#header');
+		var $nav = $('.wrapper');
 		if ($('body').scrollTop() > 0) {
 		    if ($nav.data('size') == 'big') {
 		        $nav.data('size','small').stop().animate({
