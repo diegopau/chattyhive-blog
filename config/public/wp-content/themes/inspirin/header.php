@@ -36,13 +36,7 @@
 			</div>
 		</div>
 		<div class="ft-rheader">
-			<div class="ft-menu">
-				<?php if ( has_nav_menu( 'primary_navigation' ) ): ?>
-				<?php wp_nav_menu( array('theme_location' => 'primary_navigation','container' => false,'menu_class' => 'primenu','echo' => true,'before' => '','after' => '','link_before' => '','link_after' => '','depth' => 3,'items_wrap' => '<ul class="primenu">%3$s</ul>')); ?>
-				<?php else: ?>
-				<p class="ft-nomenus">Please Setup Your Menus : Dashboard --> Appearance --> Menus</p>
-				<?php endif; ?>
-			</div>
+
 			<div class="ft-icons">
 				<ul>
 					<?php if(!empty($smof_data['ft_rss'])): ?><li class="ft-rss"><a target="_blank" href="<?php echo esc_url($smof_data['ft_rss']); ?>"><i class="icon-rss"></i></a></li><?php endif; ?>
@@ -52,6 +46,13 @@
 					<li><a class="search-bt" href="#"><i class="icon-search"></i></a></li>
 				</ul>
 				<div class="ft-search-hide"><?php get_search_form( true ); ?><div class="ft-shbg"></div></div>
+			</div>
+			<div class="ft-menu">
+				<?php if ( has_nav_menu( 'primary_navigation' ) ): ?>
+				<?php wp_nav_menu( array('theme_location' => 'primary_navigation','container' => false,'menu_class' => 'primenu','echo' => true,'before' => '','after' => '','link_before' => '','link_after' => '','depth' => 3,'items_wrap' => '<ul class="primenu">%3$s</ul>')); ?>
+				<?php else: ?>
+				<p class="ft-nomenus">Please Setup Your Menus : Dashboard --> Appearance --> Menus</p>
+				<?php endif; ?>
 			</div>
 		</div>
 	</div>			
