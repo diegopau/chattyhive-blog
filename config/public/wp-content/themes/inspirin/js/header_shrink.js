@@ -10,13 +10,13 @@ jQuery(document).ready(function ($) {
 		if ($('body').scrollTop() > 0) {
 		    if ($nav.data('size') == 'big') {
 		        $nav.data('size','small').stop().animate({
-		            margin-top:'0px'
+		            marginTop:'0px'
 		        }, 300);
 		    }
 		} else {
 		    if ($nav.data('size') == 'small') {
 		        $nav.data('size','big').stop().animate({
-		            margin-top:'5px'
+		            marginTop:'5px'
 		        }, 300);
 		    }  
 		}
