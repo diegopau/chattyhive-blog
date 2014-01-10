@@ -2,7 +2,7 @@ jQuery(function($){
     $('#header').data('size','big');
 });
 
-$(window).scroll(function(){
+jQuery(window).scroll(function($){
 console.log($(window).scrollTop());
     var $nav = $('#header');
     if ($('body').scrollTop() > 0) {
