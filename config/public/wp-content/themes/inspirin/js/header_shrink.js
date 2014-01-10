@@ -1,4 +1,4 @@
-$(function(){
+jQuery(function($){
     $('#header').data('size','big');
 });
 
