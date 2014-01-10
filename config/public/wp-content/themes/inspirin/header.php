@@ -19,7 +19,7 @@
 <body <?php body_class(); ?>>
 
 <header id="header">
-	<div class="wrapper clearfix">
+	<div class="wrapper clearfix cabecera">
 		<div class="ft-lheader">
 			<a class="ft-jpbutton" href="#menu"><i class="icon-reorder"></i></a>	
 			<div class="ft-logo">

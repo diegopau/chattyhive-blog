@@ -60,13 +60,13 @@ a{color:#f34c3d;text-decoration:underline;-webkit-transition:.07s ease-in;-moz-t
 /*	3.	Structure
 /*-----------------------------------------------------------------------------------*/
 
-.container{width:100%}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin-left:auto;position:relative;margin-top:11px;margin-bottom:11px}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
+.container{width:100%}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin-left:auto;position:relative;}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
 
 /*-----------------------------------------------------------------------------------*/
 /*	4.	Header
 /*-----------------------------------------------------------------------------------*/
 
-#header{position:fixed;z-index:99999;background:rgba(17,17,17,0.89);float:left;width:100%;padding:0;box-shadow: #404040 1px 1px 6px 0px;}.ft-lheader{float:left;width:180px}.ft-rheader{margin-left:220px}
+#header{position:fixed;z-index:99999;background:rgba(17,17,17,0.89);float:left;width:100%;padding:0;box-shadow: #404040 1px 1px 6px 0px;}.ft-lheader{float:left;width:180px}.ft-rheader{margin-left:220px}.cabecera{margin-top:11px;margin-bottom:11px}
 /* Logo */
 .ft-logo{float:left;width:auto;margin:0 0 0 30px}.ft-logo img{max-width:100% !important}.ct-logo{margin:0;text-transform:uppercase}.ct-logo a{color:#444;text-decoration:none}.ct-logo a:hover{color:#666;text-decoration:none;-webkit-opacity:.8;-moz-opacity:.8;opacity:.8}
 /* Menu */
