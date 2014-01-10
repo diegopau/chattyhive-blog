@@ -11,13 +11,15 @@ jQuery(document).ready(function ($) {
 		    if ($nav.data('size') == 'big') {
 		        $nav.data('size','small').stop().animate({
 		            marginTop:'0px'
-		        }, 300);
+					marginBottom:'0px'
+		        }, 100);
 		    }
 		} else {
 		    if ($nav.data('size') == 'small') {
 		        $nav.data('size','big').stop().animate({
-		            marginTop:'5px'
-		        }, 300);
+		            marginTop:'5px',
+					marginBottom:'5px'
+		        }, 100);
 		    }  
 		}
 	});
