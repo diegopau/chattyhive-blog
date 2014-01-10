@@ -3,7 +3,7 @@ jQuery(function($){
 });
 
 jQuery(window).scroll(function($){
-console.log($(window).scrollTop());
+console.log(jQuery(window).scrollTop());
     var $nav = $('#header');
     if ($('body').scrollTop() > 0) {
         if ($nav.data('size') == 'big') {
