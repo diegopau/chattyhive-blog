@@ -10,7 +10,7 @@ jQuery(document).ready(function ($) {
 		if ($('body').scrollTop() > 0) {
 		    if ($nav.data('size') == 'big') {
 		        $nav.data('size','small').stop().animate({
-		            marginTop:'0px'
+		            marginTop:'0px',
 					marginBottom:'0px'
 		        }, 100);
 		    }
