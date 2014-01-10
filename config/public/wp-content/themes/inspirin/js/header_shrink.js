@@ -1,4 +1,4 @@
-$(function(){
+(function($){
     $('.wrapper').data('size','big');
 });
 
