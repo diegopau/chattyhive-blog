@@ -1,9 +1,10 @@
-(function($){
-    $('.wrapper').data('size','big');
+$(function(){
+    $('#header').data('size','big');
 });
 
-(window).scroll(function($){
-    var $nav = $('.wrapper');
+$(window).scroll(function(){
+console.log($(window).scrollTop());
+    var $nav = $('#header');
     if ($('body').scrollTop() > 0) {
         if ($nav.data('size') == 'big') {
             $nav.data('size','small').stop().animate({
