@@ -54,6 +54,9 @@
 				<p class="ft-nomenus">Please Setup Your Menus : Dashboard --> Appearance --> Menus</p>
 				<?php endif; ?>
 			</div>
+			<div class="menuarriba">
+				<?php wp_nav_menu( array('menu' => 'Menu Arriba','container' => false,'menu_class' => 'primenu','echo' => true,'before' => '','after' => '','link_before' => '','link_after' => '','depth' => 3,'items_wrap' => '<ul class="primenu">%3$s</ul>')); ?>
+			</div>
 		</div>
 	</div>			
 </header>

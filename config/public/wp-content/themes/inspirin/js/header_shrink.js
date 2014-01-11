@@ -13,6 +13,7 @@ jQuery(document).ready(function ($) {
 		            marginTop:'0px',
 					marginBottom:'0px'
 		        }, 100);
+				$('.ft-logo img').css("max-width","100% !important");
 		    }
 		} else {
 		    if ($nav.data('size') == 'small') {
@@ -20,6 +21,7 @@ jQuery(document).ready(function ($) {
 		            marginTop:'22px',
 					marginBottom:'25px'
 		        }, 100);
+				$('.ft-logo img').css("max-width","70% !important");
 		    }  
 		}
 	});
