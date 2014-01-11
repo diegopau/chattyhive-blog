@@ -4,6 +4,8 @@ jQuery(document).ready(function ($) {
 		$('.cabecera').data('size','big');
 	});
 
+	if ($(window).width() > 767) {
+
 	$(window).scroll(function(){
 		var $nav = $('.cabecera');
 		if ($('body').scrollTop() > 0) {
@@ -12,6 +14,7 @@ jQuery(document).ready(function ($) {
 		            marginTop:'0px',
 					marginBottom:'0px'
 		        }, 100);
+				$('#main').css("margin","130px 0 0");
 				$('.ft-logo img').css("cssText", "max-width: 70% !important");
 				$('.ft-logo').css("margin","8px 0 8px 0");
 				$('.menuarriba').css("font-size","17px");
@@ -19,6 +22,7 @@ jQuery(document).ready(function ($) {
 		    }
 		} else {
 		    if ($nav.data('size') == 'small') {
+				$('#main').css("margin","90px 0 0");
 		        $nav.data('size','big').stop().animate({
 		            marginTop:'22px',
 					marginBottom:'25px'
@@ -30,5 +34,7 @@ jQuery(document).ready(function ($) {
 		    }  
 		}
 	});
+
+	}
 
 });
