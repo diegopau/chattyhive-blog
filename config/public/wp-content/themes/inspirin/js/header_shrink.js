@@ -5,7 +5,7 @@ jQuery(document).ready(function ($) {
 	});
 
 	
-	if ($('#header').css("position")=="fixed"){
+	if ($('#header').css("position")=="caca"){
 		$(window).scroll(function(){
 			var $nav = $('.cabecera');
 			if ($('body').scrollTop() > 0) {
