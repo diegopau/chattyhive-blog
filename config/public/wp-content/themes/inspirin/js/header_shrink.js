@@ -14,6 +14,7 @@ jQuery(document).ready(function ($) {
 		        }, 100);
 				$('.ft-logo img').css("max-width", "70% !important");
 				$('.menuarriba').css("font-size","17px");
+				$('.ft-icons a i').css("font-size","20px");
 		    }
 		} else {
 		    if ($nav.data('size') == 'small') {
@@ -23,6 +24,7 @@ jQuery(document).ready(function ($) {
 		        }, 100);
 				$('.ft-logo img').css("max-width", "100% !important");
 				$('.menuarriba').css("font-size","20px");
+				$('.ft-icons a i').css("font-size","24px");
 		    }  
 		}
 	});
