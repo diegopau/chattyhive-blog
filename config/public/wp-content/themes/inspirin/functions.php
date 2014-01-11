@@ -82,7 +82,7 @@ function ft_theme_js() {
 		wp_register_script( 'jpanel', get_template_directory_uri() . '/js/jpanelmenu.js', array('jquery'), '1.3.0', true );
 		wp_register_script( 'fitvids', get_template_directory_uri() . '/js/fitvids.js', array('jquery'), '1.0.0', true );
 		wp_register_script( 'custom', get_template_directory_uri() . '/js/custom.js', array('jquery'), '1.0.0', false );
-		wp_register_script( 'header_shrink', get_template_directory_uri() . '/js/header_shrink.js', array('jquery'), '1.0.0', true );
+		wp_register_script( 'header_shrink', get_template_directory_uri() . '/js/header_shrink.js', array('jquery'), '1.0.0', false );
 
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'jpanel' );

@@ -811,7 +811,7 @@ $of_options[] = array( "name" => "Styling Options",
 $of_options[] = array( "name" => "Color Style",
 					"desc" => "",
 					"id" => "ft_color_style",
-					"std" => "#F34C3D",
+					"std" => "",
 					"type" => "color");
 					
 $of_options[] = array( "name" => "Custom CSS",
