@@ -1,12 +1,12 @@
 <?php global $smof_data; ?>
 <style type="text/css">
-	a, a:hover, .ft-rdtitle i { color: <?php if(!empty($smof_data['ft_color_style'])): ?><?php echo $smof_data['ft_color_style']; ?><?php endif; ?>}
-	#sidebar-left .widget ul li a, input[type="button"], input[type="submit"], #post-nav .pagination span, #post-nav .pagination a, .ft-rdposts, .ft-ftmenu, .ft-ptags a, a:hover.comment-reply-link { background:<?php if(!empty($smof_data['ft_color_style'])): ?><?php echo $smof_data['ft_color_style']; ?><?php endif; ?>; }
-	.hentry a.more-link { background-color:<?php if(!empty($smof_data['ft_color_style'])): ?><?php echo $smof_data['ft_color_style']; ?><?php endif; ?>; }
-	.widget_calendar table#wp-calendar thead > tr > th { background:<?php if(!empty($smof_data['ft_color_style'])): ?><?php echo $smof_data['ft_color_style']; ?><?php endif; ?>; }
-	.widget_calendar th { border-right: 1px solid <?php if(!empty($smof_data['ft_color_style'])): ?><?php echo $smof_data['ft_color_style']; ?><?php endif; ?>; }
-	.widget_calendar table > thead { border: 1px solid <?php if(!empty($smof_data['ft_color_style'])): ?><?php echo $smof_data['ft_color_style']; ?><?php endif; ?>; }
-	.widget_calendar table > thead > tr { border-bottom: 1px solid <?php if(!empty($smof_data['ft_color_style'])): ?><?php echo $smof_data['ft_color_style']; ?><?php endif; ?>; }
+	a, a:hover, .ft-rdtitle i {}
+	#sidebar-left .widget ul li a, input[type="button"], input[type="submit"], #post-nav .pagination span, #post-nav .pagination a, .ft-rdposts, .ft-ftmenu, .ft-ptags a, a:hover.comment-reply-link {}
+	.hentry a.more-link {}
+	.widget_calendar table#wp-calendar thead > tr > th {}
+	.widget_calendar th {}
+	.widget_calendar table > thead {}
+	.widget_calendar table > thead > tr {}
 </style>
 
 <?php if(!empty($smof_data['ft_enable_custom_font'])): ?>
