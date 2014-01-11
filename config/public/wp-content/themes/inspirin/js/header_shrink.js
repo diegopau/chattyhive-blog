@@ -4,6 +4,8 @@ jQuery(document).ready(function ($) {
 		$('.cabecera').data('size','big');
 	});
 
+	$(window).resize(function () {
+    
 	if ($(window).innerWidth() > 767) {
 
 		$(window).scroll(function(){
@@ -36,5 +38,6 @@ jQuery(document).ready(function ($) {
 		});
 
 	}
+  });
 
 });
