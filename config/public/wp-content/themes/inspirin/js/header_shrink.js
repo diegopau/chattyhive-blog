@@ -5,7 +5,6 @@ jQuery(document).ready(function ($) {
 	});
 
 	$(window).scroll(function(){
-	console.log($(window).scrollTop());
 		var $nav = $('.cabecera');
 		if ($('body').scrollTop() > 0) {
 		    if ($nav.data('size') == 'big') {
@@ -13,7 +12,8 @@ jQuery(document).ready(function ($) {
 		            marginTop:'0px',
 					marginBottom:'0px'
 		        }, 100);
-				$('.ft-logo img').css("max-width","70% !important");
+				$('.ft-logo img').css("max-width", "70% !important");
+				$('.menuarriba').css("font-size","17px");
 		    }
 		} else {
 		    if ($nav.data('size') == 'small') {
@@ -21,7 +21,8 @@ jQuery(document).ready(function ($) {
 		            marginTop:'22px',
 					marginBottom:'25px'
 		        }, 100);
-				$('.ft-logo img').css("max-width","100% !important");
+				$('.ft-logo img').css("max-width", "100% !important");
+				$('.menuarriba').css("font-size","20px");
 		    }  
 		}
 	});
