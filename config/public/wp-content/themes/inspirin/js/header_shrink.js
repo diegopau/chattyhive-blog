@@ -4,7 +4,7 @@ jQuery(document).ready(function ($) {
 		$('.cabecera').data('size','big');
 	});
 
-	if ($(window).width() > 767) {
+	if ($(window).innerWidth() > 767) {
 
 		$(window).scroll(function(){
 			var $nav = $('.cabecera');
