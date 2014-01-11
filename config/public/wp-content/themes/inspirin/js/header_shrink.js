@@ -13,6 +13,7 @@ jQuery(document).ready(function ($) {
 					marginBottom:'0px'
 		        }, 100);
 				$('.ft-logo img').css("cssText", "max-width: 70% !important");
+				$('.ft-logo').css("margin","8px 0 8px 0");
 				$('.menuarriba').css("font-size","17px");
 				$('.ft-icons a i').css("font-size","20px");
 		    }
@@ -23,6 +24,7 @@ jQuery(document).ready(function ($) {
 					marginBottom:'25px'
 		        }, 100);
 				$('.ft-logo img').css("cssText", "max-width: 100% !important");
+				$('.ft-logo').css("margin","0px 0 0px 0");
 				$('.menuarriba').css("font-size","20px");
 				$('.ft-icons a i').css("font-size","24px");
 		    }  
