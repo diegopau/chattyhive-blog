@@ -115,11 +115,13 @@ function ft_theme_style()  {
 	wp_register_style( 'google-fonts', 'http://fonts.googleapis.com/css?family=Bitter:400,700', array(), null ); 
 	wp_register_style( 'fontawesome-style', get_template_directory_uri() . '/css/font-awesome.css', array(), '3.2', 'all' );
 	wp_register_style( 'typography-style', get_template_directory_uri() . '/css/typography.css', array(), '1.0', 'all' ); 
+	wp_register_style( 'web-font-style', get_template_directory_uri() . '/css/web-font.css', array(), '1.0', 'all' ); 
 
 	wp_enqueue_style( 'default-style' );
 	wp_enqueue_style( 'google-fonts' );
 	wp_enqueue_style( 'fontawesome-style' );  
 	wp_enqueue_style( 'typography-style' );  
+	wp_enqueue_style( 'web-font-style' );
 
 }  
 add_action( 'wp_enqueue_scripts', 'ft_theme_style' );  
