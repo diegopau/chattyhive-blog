@@ -18,7 +18,7 @@ jQuery(document).ready(function ($) {
 			$('.ft-logo').css("margin","0px 0 0px 0");
 			$('.ft-icons a i').css("font-size","24px");
 		}
-	}
+	});
 	
 
 	$(window).scroll(function(){
