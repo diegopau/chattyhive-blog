@@ -9,7 +9,7 @@ jQuery(document).ready(function ($) {
 				var $nav = $('.cabecera');
 				if ($('#header').css("position")=="fixed"){
 					
-					if ($('body').scrollTop() > 0) {
+					if ($('body').scrollTop() > 50) {
 						if ($nav.data('size') == 'big') {
 							$nav.data('size','small').stop().animate({marginTop:'0px',marginBottom:'0px'}, 100);
 							$('#main').css("margin","130px 0 0");
