@@ -22,8 +22,8 @@ jQuery(document).ready(function ($) {
 	
 
 	$(window).scroll(function(){
-		if f ($('#header').css("position")=="fixed"){
-			if ($('body').scrollTop() > 70){
+		if ($('#header').css("position")=="fixed"){
+			if (documentElement.scrollTop() > 70){
 				if ($nav.data('size') == 'big') {
 					$nav.data('size','small').stop().animate({marginTop:'0px',marginBottom:'0px'}, 50);
 					$('#main').css("margin","130px 0 0");
