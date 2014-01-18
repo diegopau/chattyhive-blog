@@ -17,12 +17,7 @@ jQuery(document).ready(function ($) {
 			$('.menuarriba').css("margin-right","175px");
 		}
 		else{
-			$nav.data('size','small').stop().animate({marginTop:'0px',marginBottom:'0px'}, 200);
-			$('#main').css("margin","140px 0 0");
-			$('.ft-logo img').css("cssText", "max-width: 70% !important");
-			$('.ft-logo').css("margin","8px 0 8px 0");
-			$('.ft-icons a i').css("font-size","20px");
-			$('.menuarriba').css("margin-right","200px");
+
 		}
 	});
 	
