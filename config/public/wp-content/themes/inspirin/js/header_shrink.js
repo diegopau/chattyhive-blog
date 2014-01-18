@@ -11,7 +11,7 @@ jQuery(document).ready(function ($) {
 		if ($('#header').css("position")!="fixed"){
 			$('#main').css("margin","0px 0 0");
 			$nav.data('size','big').stop().animate({marginTop:'22px',marginBottom:'25px'}, 100);
-			$('.ft-logo img')css("cssText", "max-width: 100% !important");
+			$('.ft-logo img').css("cssText", "max-width: 100% !important");
 			$('.ft-logo').css("margin","0px 0 0px 0");
 			$('.ft-icons a i').css("font-size","24px");
 			$('.menuarriba').css("margin-right","175px");
