@@ -60,7 +60,7 @@ a{color:#ffb615;text-decoration:underline}a:hover{color:orange;text-decoration:n
 /*	3.	Structure
 /*-----------------------------------------------------------------------------------*/
 
-.container{width:100%}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin:0 auto;position:relative;}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
+.jPanelMenu-panel{background-color: #fff; background-size: auto;background-attachment: scroll}.container{width:100%}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin:0 auto;position:relative;}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
 
 /*-----------------------------------------------------------------------------------*/
 /*	4.	Header
