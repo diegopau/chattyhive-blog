@@ -86,7 +86,7 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
 /*	5.	Content 
 /*-----------------------------------------------------------------------------------*/
 
-#main{-webkit-transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);-moz-transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);-o-transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);margin:90px 0 0}#content{margin:34px 0 0 220px}
+#main{-webkit-transition: all 200ms cubic-bezier(0.250, 0.250, 0.750, 0.750);-moz-transition: all 200ms cubic-bezier(0.250, 0.250, 0.750, 0.750);-o-transition: all 200ms cubic-bezier(0.250, 0.250, 0.750, 0.750);transition: all 200ms cubic-bezier(0.250, 0.250, 0.750, 0.750);margin:90px 0 0}#content{margin:34px 0 0 220px}
 /* Post */
 .hentry{position:relative;padding-bottom:15px;margin-bottom:40px;border-bottom:7px solid #444}.hentry:last-child{border:none;padding-bottom:0;margin-bottom:0}.sticky{}
 /* Post Box */
