@@ -23,6 +23,7 @@ jQuery(document).ready(function ($) {
 			$('.ft-logo').css("margin","0px 0 0px 0");
 			$('.ft-icons a i').css("font-size","24px");
 			$('.menuarriba').css("margin-right","175px");
+			$('.menuarriba').css("font-size","20px");
 		}
 	});
 	
@@ -37,6 +38,7 @@ jQuery(document).ready(function ($) {
 					$('.ft-logo').css("margin","8px 0 8px 0");
 					$('.ft-icons a i').css("font-size","20px");
 					$('.menuarriba').css("margin-right","200px");
+					$('.menuarriba').css("font-size","18px");
 				}
 			}
 			else {
@@ -47,6 +49,7 @@ jQuery(document).ready(function ($) {
 					$('.ft-logo').css("margin","0px 0 0px 0");
 					$('.ft-icons a i').css("font-size","24px");
 					$('.menuarriba').css("margin-right","175px");
+					$('.menuarriba').css("font-size","20px");
 				}
 			}
 		}
