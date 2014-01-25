@@ -100,7 +100,7 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
 /* Entry */
 .hentry .ft-entry p:first-child{font-size:18px;line-height:30px;margin-bottom:30px}.hentry.single .ft-entry{margin-bottom:50px}
 /* More Link */
-.hentry a.more-link{background: #ffb615 url("images/read-more.png") no-repeat 91% 6px;background-size:34px 34px;color:#fff;display:inline-block;font-size:16px;font-style:italic;padding:10px 57px 10px 16px;text-decoration:none;}.hentry a:hover.more-link{background: #222 url("images/read-more.png") no-repeat 91% 6px;background-size:34px 34px;text-decoration:none}
+.hentry a.more-link{font-weight:700; background: #FFA300 url("images/read-more.png") no-repeat 91% 6px;background-size:34px 34px;color:#fff;display:inline-block;font-size:16px;font-style:italic;padding:10px 57px 10px 16px;text-decoration:none;}.hentry a:hover.more-link{background: #222 url("images/read-more.png") no-repeat 91% 6px;background-size:34px 34px;text-decoration:none}
 /* Border Bottom */
 .ft-bborder{background:#444;width:100%;height:5px;margin-top:-30px}
 /* Entry Single */
