@@ -39,10 +39,10 @@
 
 			<div class="ft-icons">
 				<ul>
-					<?php if(!empty($smof_data['ft_rss'])): ?><li class="ft-rss"><a target="_blank" href="<?php echo esc_url($smof_data['ft_rss']); ?>"><i class="icon-rss"></i></a></li><?php endif; ?>
 					<?php if(!empty($smof_data['ft_twitter'])): ?><li class="ft-twitter"><a target="_blank" href="http://twitter.com/<?php echo esc_attr($smof_data['ft_twitter']); ?>"><i class="icon-twitter"></i></a></li><?php endif; ?>
 					<?php if(!empty($smof_data['ft_facebook'])): ?><li class="ft-facebook"><a target="_blank" href="<?php echo esc_url($smof_data['ft_facebook']); ?>"><i class="icon-facebook"></i></a></li><?php endif; ?>
 					<?php if(!empty($smof_data['ft_google_plus'])): ?><li class="ft-google"><a target="_blank" href="<?php echo esc_url($smof_data['ft_google_plus']); ?>"><i class="icon-google-plus"></i></a></li><?php endif; ?>
+					<?php if(!empty($smof_data['ft_rss'])): ?><li class="ft-rss"><a target="_blank" href="<?php echo esc_url($smof_data['ft_rss']); ?>"><i class="icon-rss"></i></a></li><?php endif; ?>
 					<li><a class="search-bt" href="#"><i class="icon-search"></i></a></li>
 				</ul>
 				<div class="ft-search-hide"><?php get_search_form( true ); ?><div class="ft-shbg"></div></div>
