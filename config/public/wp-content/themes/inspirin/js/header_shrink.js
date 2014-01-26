@@ -9,7 +9,7 @@ jQuery(document).ready(function ($) {
 	$(window).resize(function() {
 		
 		if ($('#header').css("position")!="fixed"){
-			$('#main').css("margin","0px 0 0");
+			$('#main').css("margin","0px 0 30px 0");
 			$nav.data('size','big').stop().animate({marginTop:'22px',marginBottom:'25px'}, 100);
 			$('.ft-logo img').css("cssText", "max-width: 100% !important");
 			$('.ft-logo').css("margin","0px 0 0px 0");
@@ -18,7 +18,7 @@ jQuery(document).ready(function ($) {
 			$('.menuarriba').css("font-size","20px");
 		}
 		else{
-			$('#main').css("margin","90px 0 0");
+			$('#main').css("margin","90px 0 30px 0");
 			$nav.data('size','big').stop().animate({marginTop:'22px',marginBottom:'25px'}, 100);
 			$('.ft-logo img').css("cssText", "max-width: 100% !important");
 			$('.ft-logo').css("margin","0px 0 0px 0");
@@ -34,7 +34,7 @@ jQuery(document).ready(function ($) {
 			if (Math.max(window.pageYOffset || document.documentElement.scrollTop || $('body').scrollTop || 0) > 70){
 				if ($nav.data('size') == 'big') {
 					$nav.data('size','small').stop().animate({marginTop:'0px',marginBottom:'0px'}, 200);
-					$('#main').css("margin","140px 0 0");
+					$('#main').css("margin","140px 0 30px 0");
 					$('.ft-logo img').css("cssText", "max-width: 70% !important");
 					$('.ft-logo').css("margin","8px 0 8px 0");
 					$('.ft-icons a i').css("font-size","20px");
@@ -44,7 +44,7 @@ jQuery(document).ready(function ($) {
 			}
 			else {
 				if ($nav.data('size') == 'small') {
-					$('#main').css("margin","90px 0 0");
+					$('#main').css("margin","90px 0 30px 0");
 					$nav.data('size','big').stop().animate({marginTop:'22px',marginBottom:'25px'}, 100);
 					$('.ft-logo img').css("cssText", "max-width: 100% !important");
 					$('.ft-logo').css("margin","0px 0 0px 0");
