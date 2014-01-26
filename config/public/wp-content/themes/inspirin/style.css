@@ -48,7 +48,7 @@ div#preload { display: none; }
 body {
 	font: 15px/27px 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	font-weight: 300;
-	background: rgba(17, 17, 17, 0.89);
+	background: #2a2a2a;
 	color: #484848;
 	margin: 0;
 	word-wrap: break-word;
@@ -71,7 +71,7 @@ a{color:#F07D00;text-decoration:underline}a:hover{color:orange;text-decoration:n
 /* Logo */
 .ft-logo{float:right;width:auto;margin:0 0 0 0px}.ft-logo img{-webkit-transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);-moz-transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);-o-transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);transition: all 100ms cubic-bezier(0.250, 0.250, 0.750, 0.750);max-width:100% !important;float:right}.ct-logo{margin:0;text-transform:uppercase}.ct-logo a{color:#444;text-decoration:none}.ct-logo a:hover{color:#666;text-decoration:none;-webkit-opacity:.8;-moz-opacity:.8;opacity:.8}
 /* Menu */
-.ft-menu{display:none;float:right;margin-top:0px;margin-right:170px;font-family:'chattyhiveabold';font-size:20px}.menuarriba{font-family:'chattyhiveabold';float:right;margin-top:0px;margin-right:180px;font-size:20px}.primenu{margin:0;list-style:none;line-height:30px}.primenu ul{list-style:none;margin-bottom:0}.primenu li{float:left;position:relative;margin:8px 35px 0 0}.primenu li:last-child{margin-right:0}.primenu li a{color:#c2c2c2;padding:0;text-decoration:none;  -webkit-transition: all 400ms ease;-o-transition: all 400ms ease;transition: all 400ms ease}.primenu li a:hover{color:#ffb615;text-decoration:none;  -webkit-transition: all 400ms ease;-o-transition: all 400ms ease;transition: all 400ms ease}.primenu li a i{font-size:20px;margin-right:5px}.primenu li>ul,.primenu li>ul>li>ul{list-style:none;background-color:#fff;-webkit-box-shadow:0 0 3px 0 rgba(0,0,0,0.2);-moz-box-shadow:0 0 3px 0 rgba(0,0,0,0.2);box-shadow:0 0 3px 0 rgba(0,0,0,0.2);float:left;position:absolute;margin:0;z-index:9999;width:240px;border-top:3px solid #222}.primenu li>ul>li>ul{margin:0;top:-2px;left:240px}.primenu li>ul>li{position:relative;width:100%;border-bottom:1px solid #e7e7e7}.primenu li>ul>li.menu-item-ancestor{background:url("images/menu-arrow.png") no-repeat 92% center;)}.primenu li>ul>li:hover.menu-item-ancestor{background:#fff url("images/menu-arrow.png") no-repeat 92% center;)}.primenu li>ul>li a{padding:15px 20px}.primenu ul.sub-menu{display:none}.primenu li:hover>ul.sub-menu{display:block}
+.ft-menu{display:none;float:right;margin-top:0px;margin-right:170px;font-family:'chattyhiveabold';font-size:20px}.menuarriba{font-family:'chattyhiveabold';float:right;margin-top:0px;margin-right:141px;font-size:20px}.primenu{margin:0;list-style:none;line-height:30px}.primenu ul{list-style:none;margin-bottom:0}.primenu li{float:left;position:relative;margin:8px 35px 0 0}.primenu li:last-child{margin-right:0}.primenu li a{color:#c2c2c2;padding:0;text-decoration:none;  -webkit-transition: all 400ms ease;-o-transition: all 400ms ease;transition: all 400ms ease}.primenu li a:hover{color:#ffb615;text-decoration:none;  -webkit-transition: all 400ms ease;-o-transition: all 400ms ease;transition: all 400ms ease}.primenu li a i{font-size:20px;margin-right:5px}.primenu li>ul,.primenu li>ul>li>ul{list-style:none;background-color:#fff;-webkit-box-shadow:0 0 3px 0 rgba(0,0,0,0.2);-moz-box-shadow:0 0 3px 0 rgba(0,0,0,0.2);box-shadow:0 0 3px 0 rgba(0,0,0,0.2);float:left;position:absolute;margin:0;z-index:9999;width:240px;border-top:3px solid #222}.primenu li>ul>li>ul{margin:0;top:-2px;left:240px}.primenu li>ul>li{position:relative;width:100%;border-bottom:1px solid #e7e7e7}.primenu li>ul>li.menu-item-ancestor{background:url("images/menu-arrow.png") no-repeat 92% center;)}.primenu li>ul>li:hover.menu-item-ancestor{background:#fff url("images/menu-arrow.png") no-repeat 92% center;)}.primenu li>ul>li a{padding:15px 20px}.primenu ul.sub-menu{display:none}.primenu li:hover>ul.sub-menu{display:block}
 /* No Menus */
 p.ft-nomenus{line-height:60px;margin-bottom:0;}
 /* Icons */
@@ -166,13 +166,12 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
 /*-----------------------------------------------------------------------------------*/
 .section.grey.footer {
   border-top: 1px solid white;
-  background-color: rgba(17, 17, 17, 0.89);
+  background-color: #2a2a2a;
   box-shadow: #7a7979 0px -2px 6px 0px;
   text-align: center;
   position: static;
   padding-top: 36px;
   padding-bottom: 36px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.09);
   float:left;
   width:100%
 }
