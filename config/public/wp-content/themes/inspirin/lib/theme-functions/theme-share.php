@@ -5,7 +5,7 @@
 <div class="ft-share">		
 	<ul>
 		<li class="ft-stwitter"><a target="_blank" href="https://twitter.com/intent/tweet?original_referer=<?php the_permalink(); ?>&text=<?php the_title_attribute(); ?>&tw_p=tweetbutton&url=<?php the_permalink(); ?>&via=<?php if(!empty($smof_data['ft_twitter'])): ?><?php echo esc_attr($smof_data['ft_twitter']); ?><?php endif; ?>"><i class="icon-twitter"></i>Tweet</a></li>
-		<li class="ft-sfacebook"><a target="_blank" href="http://www.facebook.com/plugins/like.php?href=<?php the_permalink(); ?>" onclick="javascript:window.open(this.href,
+		<li class="ft-sfacebook"><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=<?php the_permalink(); ?>" onclick="javascript:window.open(this.href,
   '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;"><i class="icon-facebook"></i>Like It</a></li>
 		<li class="ft-sgoogle"><a href="https://plus.google.com/share?url=<?php the_permalink(); ?>" onclick="javascript:window.open(this.href,
   '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;"><i class="icon-google-plus"></i>Google +</a></li>
