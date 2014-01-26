@@ -48,7 +48,7 @@ div#preload { display: none; }
 body {
 	font: 15px/27px 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	font-weight: 300;
-	background: #2a2a2a;
+	background: #222;
 	color: #484848;
 	margin: 0;
 	word-wrap: break-word;
@@ -61,7 +61,7 @@ a{color:#F07D00;text-decoration:underline}a:hover{color:orange;text-decoration:n
 /*	3.	Structure
 /*-----------------------------------------------------------------------------------*/
 
-.jPanelMenu-panel{height:100%; background-color: #2a2a2a; background-size: auto;background-attachment: scroll}.container{width:100%;background-color:white}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin:0 auto;position:relative;}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
+.jPanelMenu-panel{height:100%; background-color: #222; background-size: auto;background-attachment: scroll}.container{width:100%;background-color:white}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin:0 auto;position:relative;}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
 
 /*-----------------------------------------------------------------------------------*/
 /*	4.	Header
@@ -166,7 +166,7 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
 /*-----------------------------------------------------------------------------------*/
 .section.grey.footer {
   border-top: 1px solid white;
-  background-color: #2a2a2a;
+  background-color: #222222;
   box-shadow: #7a7979 0px -2px 6px 0px;
   text-align: center;
   position: static;
