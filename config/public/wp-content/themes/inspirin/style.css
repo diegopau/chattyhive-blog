@@ -140,13 +140,16 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
 /* Right Sidebar */
 #sidebar{width:300px;margin:40px 0;float:right}.xililanguagelist{font-size:24px; font-weight:400; color: #444}
 /* Widgets */
-.widget{width:100%;margin-bottom:25px}.widget:last-child{margin-bottom:0}.widget .widget-title{margin-bottom:15px;text-transform:uppercase}#sidebar .widget .widget-title{background:#222;color:#fff;padding:17px;margin-bottom:25px}.widget p:last-child{margin-bottom:0}
+.widget{width:100%;margin-bottom:40px}.widget:last-child{margin-bottom:0}.widget .widget-title{margin-bottom:15px;text-transform:uppercase}#sidebar .widget .widget-title{background:#222;color:#fff;padding:17px;margin-bottom:25px}.widget p:last-child{margin-bottom:0}
 /* Links & Page */
 .widget a{color:#444;text-decoration:underline}.widget a:hover{color:#444;text-decoration:none}.widget ul{margin:0;list-style:none}.widget ul li{background:url("images/list-arrow.png") no-repeat left 10px;padding:0 0 10px 15px;margin-bottom:10px;border-bottom:1px solid #e5e5e5}.widget ul li:last-child{padding-bottom:0;margin-bottom:0;border-bottom:0}.widget ul li a{text-decoration:none}.widget ul li a:hover{text-decoration:underline}.widget ul li ul{margin-left:10px}
 /* Select */
 .widget select{width: 99%}
-/* Calendar */
+
 .xili-language_Widgets{margin-bottom:40px}
+.widget_tag_cloud a{font-size:14px;font-weight:700;background:#FFD16C;display:inline-block;color:#111 !important;padding:2px 10px;margin:0 10px 10px 0;-webkit-border-radius:5px;-moz-border-radius:5px;border-radius:5px;text-decoration:none}
+
+/* Calendar */
 .widget_calendar table{width:100%;margin:0;border:0}.widget_calendar table caption{margin:0 0 10px;width:100%;overflow:hidden}.widget_calendar table>thead{border:1px solid #ffb615}.widget_calendar table>thead>tr{color:#fff;border-bottom:1px solid #ffb615}.widget_calendar tbody>tr>td{padding:7px 0 8px;text-align:center;width:14.2857%}.widget_calendar table#wp-calendar thead>tr>th{background:#ffb615}.widget_calendar th{padding:9px;text-align:center;border-right:1px solid #ffb615}.widget_calendar th:last-child{border:0}.widget_calendar table>tbody{border:1px solid #e5e5e5}.widget_calendar table>tbody>tr{border-bottom:1px solid #e5e5e5}.widget_calendar table>tbody>tr td{border-right:1px solid #e5e5e5}.widget_calendar table>tbody>tr td a{font-weight:bold;text-decoration:none}.widget_calendar table>tbody>tr td#today a{color:#fff}.widget_calendar a:hover{text-decoration:underline}.widget_calendar tfoot>tr{border-bottom:1px #222}.widget_calendar #prev{text-align:left;font-weight:bold}.widget_calendar #prev a{text-decoration:none}.widget_calendar #next{text-align:right;font-weight:bold}.widget_calendar #next a{text-decoration:none}
 /* Search Widget */
 .widget #searchform{background:#fff;overflow:hidden;width:100%}.widget #searchform h3{display:none}.widget #searchform input[type="text"]{padding:4%;width:91%;border:1px solid #e5e5e5}.widget #searchform input[type="submit"]{display:none}
