@@ -11,6 +11,7 @@
 			<?php wp_link_pages('before=<div id="ft-pagelinks">&after=</div>'); ?>
 		</div>
 		<div class="ft-ptags"><strong><?php _e('Post Tags', 'ft'); ?>:</strong><?php the_tags( '','','' ); ?></div>
+		<?php include get_template_directory() . '/lib/theme-functions/theme-share.php'; ?>
 		<?php include get_template_directory() . '/lib/theme-functions/optin-form.php'; ?>
 		<?php include get_template_directory() . '/lib/theme-functions/author-box.php'; ?>
 		<?php include get_template_directory() . '/lib/theme-functions/related-posts.php'; ?>
