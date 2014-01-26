@@ -107,7 +107,7 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
 .ft-bborder{background:#444;width:100%;height:5px;margin-top:-30px}
 /* Entry Single */
 /* Tags */
-.ft-ptags{margin-bottom:25px}.ft-ptags strong{font-size:16px;margin-right:10px}.ft-ptags a{display:inline-block;background:#FFA300;color:#fff !important;padding:4px 14px;margin:0 10px 10px 0;-webkit-border-radius:5px;-moz-border-radius:5px;border-radius:5px;text-decoration:none}.ft-ptags a:hover{background:#222;color:#fff !important}
+.ft-ptags{margin-bottom:25px;font-size:18px}.ft-ptags strong{font-size:16px;margin-right:10px}.ft-ptags a{display:inline-block;background:#FFA300;color:#fff !important;padding:4px 14px;margin:0 10px 10px 0;-webkit-border-radius:5px;-moz-border-radius:5px;border-radius:5px;text-decoration:none}.ft-ptags a:hover{background:#222;color:#fff !important}
 /* Optin Form */
 .ft-optin{background:#222;padding:30px;margin-bottom:35px;color:#fff;overflow:hidden}.ft-optin h5{color:#fff;margin-bottom:15px;text-transform:uppercase}.ft-optin p{margin-bottom:15px}.ft-optin p a{color:#fff;text-decoration:underline}.ft-optin p a:hover{color:#fff;text-decoration:none}.ft-optin form{margin-bottom:0}.ft-optin input[type="email"],.ft-optin input[type="text"]{padding:12px;margin:0;width:45%;border:0;display:inline;-webkit-border-radius:5px 0 0 5px;-moz-border-radius:5px 0 0 5px;border-radius:5px 0 0 5px}.ft-optin input[type="submit"]{padding:11px 15px;margin:0;text-transform:uppercase;width:auto;display:inline;-webkit-border-radius:0 5px 5px 0;-moz-border-radius:0 5px 5px 0;border-radius:0 5px 5px 0}.ft-optin input[type="submit"]:hover{background:#444}
 /* Share Buttons */
@@ -196,7 +196,7 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
   transition: all 133ms ease-out;
 }
 .logo_foot:hover {
-  background-image: url('images/isotipo_sombreado_sin_gradiente_transparente-02.png');
+  background-image: url('http://blog.chattyhive.com/wp-content/themes/inspirin/images/isotipo_sombreado_sin_gradiente_transparente-02.png');
 }
 
 .footer-link {
