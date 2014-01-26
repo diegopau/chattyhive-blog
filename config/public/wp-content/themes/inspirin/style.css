@@ -61,7 +61,7 @@ a{color:#F07D00;text-decoration:underline}a:hover{color:orange;text-decoration:n
 /*	3.	Structure
 /*-----------------------------------------------------------------------------------*/
 
-.jPanelMenu-panel{height:100%; background-color: #fff; background-size: auto;background-attachment: scroll}.container{width:100%}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin:0 auto;position:relative;}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
+.jPanelMenu-panel{height:100%; background-color: rgba(17, 17, 17, 0.89); background-size: auto;background-attachment: scroll}.container{width:100%;background-color:white}.container:after{content:"\0020";display:block;height:0;clear:both;visibility:hidden}.wrapper{width:96%;max-width:1220px;margin:0 auto;position:relative;}.content-wrapper{margin-right:335px}.content-grid{float:left;position:relative;width:100%;border-right:1px solid #ddd}#header,#main,#footer{float:left;width:100%}
 
 /*-----------------------------------------------------------------------------------*/
 /*	4.	Header
