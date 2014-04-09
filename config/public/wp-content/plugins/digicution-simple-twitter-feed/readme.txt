@@ -3,8 +3,8 @@ Contributors: digicution
 Donate link: http://www.digicution.com/
 Tags: twitter,feed,tweet,simple,list,display,digicution
 Requires at least: 3.1
-Tested up to: 3.8
-Stable tag: 1.4.1
+Tested up to: 3.8.1
+Stable tag: 1.4.2.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,8 @@ I’ve used it on around 20 sites so far and it seems to be working very well. H
 The plugin *REQUIRES* PHP's cURL function to be installed and available.  If you're unsure, please install the plugin and the diagnostics will let you know if you are able to use it or not.
 
 PHP's mcrypt library is also recommended but not essential.
+
+Serbian Translation courtesy of Borisa Djuraskovic from http://www.webhostinghub.com
 
 
 == Installation ==
@@ -117,6 +119,32 @@ No problemo, just head to http://www.digicution.com/contact/ and submit the cont
 
 
 == Changelog ==
+
+= 1.4.2.7 =
+* Changed Tweet ID to use ‘id_str’ instead as original number could cause erronous input on some PHP installations.
+
+= 1.4.2.6 =
+* Changed Tweet UTC datetime difference calculation to work outside of Wordpress date functions to create correct difference across timezones.  Thanks to Maciek Nowakiewicz for highlighting the issue.
+
+= 1.4.2.5 =
+* Changed Tweet refresh UTC date storage in DB to that of Wordpress Installation rather than the MySQL Server as the 2 server setups could be in different timezones.  Thanks to Maciek Nowakiewicz for highlighting the issue.
+
+= 1.4.2.4 =
+* Amended order of Twitter Key Entries to match those on dev.twitter.com and renamed Consumer to API for easier entry (and less confusing for user).  Thanks to Jesse Everett for pointing out the issue.
+
+= 1.4.2.3 =
+* Fixed minor bug so plugin now outputs the correct CSS if using Twitter Icons (& Automatic Styling) within the plugin.  Thanks to Rajat Soni for pointing out the issue.  
+* Also removed some extra redundant code and renamed the CSS output function to something more unique to help avoid duplication errors.
+
+= 1.4.2.2 =
+* Fixed Minor Display Bug When "Display Follow Link In Header" was set to "Text Link".
+
+= 1.4.2.1 =
+* Removed 2 redundant header functions that may have caused duplication error messages in some setups.
+
+= 1.4.2 =
+* Fixed bug with shortcode where it would display above content if placed within a page or post.  This was due to the content being printed rather than returned.  Thanks to Michael Entwistle for pointing out the issue.
+* Serbian Translation added to the plugin.  Thanks to Borisa Djuraskovic from http://www.webhostinghub.com for providing the Serbian translation.
 
 = 1.4.1 =
 * Added language files (.mo & .po) for easier translation purposes.  If you fancy translating this plugin, there is a template file now in the languages folder which should enable you to use POEdit to translate.  Please feel free to translate and submit your .po files for inclusion in the plugin :)
