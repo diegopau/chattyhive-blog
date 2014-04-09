@@ -4,7 +4,7 @@
 set -e
 set -o pipefail
 
-# START CONFIG
+# START CONFIG :)
 
 # Support end-user configured NGINX_VERSION, PHP_VERSION, WORDPRESS_VERSION
 # and S3_BUCKET environment variables. This way, end-users can choose exactly
