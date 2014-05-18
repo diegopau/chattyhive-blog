@@ -22,7 +22,7 @@ export_env_dir $3
 # S3_BUCKET environment variables. This way, end-users
 # can choose exactly which versions to run with. Requires user-env-compile for now,
 # but will continue to work when Heroku deprecates user-env-compile and ENV_DIR
-# appears to this script as a parameter.
+# appears to this script as a parameter..
 
 if [ -z "$NGINX_VERSION" ]; then
   NGINX_VERSION=1.4.2
