@@ -15,4 +15,4 @@ v0.6
 
 2013-02-07  Marc Chung  <mchung@gmail.com>
 
-  * Establish v0.6 from master
+  * Establish v0.6 from masterr
