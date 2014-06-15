@@ -31,5 +31,8 @@ msgstr "Sin categoría"
 msgid "Varios"
 msgstr "Varios"
 
+msgid "Recursos"
+msgstr "Recursos"
+
 msgid "¿Cómo funciona?"
 msgstr "¿Cómo funciona?"

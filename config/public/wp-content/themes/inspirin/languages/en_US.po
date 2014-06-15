@@ -23,13 +23,16 @@ msgid "Legal"
 msgstr "Legal stuff"
 
 msgid "Novedades"
-msgstr "New"
+msgstr "News"
 
 msgid "Sin categoría"
 msgstr "No category"
 
 msgid "Varios"
 msgstr "Other"
+
+msgid "Recursos"
+msgstr "Resources"
 
 msgid "¿Cómo funciona?"
 msgstr "How does it work?"
