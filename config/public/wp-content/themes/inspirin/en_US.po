@@ -1,0 +1,38 @@
+msgid "Android App"
+msgstr "Android App"
+
+msgid "Back End"
+msgstr "Back End"
+
+msgid "Conócenos"
+msgstr "About us"
+
+msgid "Desarrollo"
+msgstr "Development"
+
+msgid "Diseño"
+msgstr "Design"
+
+msgid "Emprender"
+msgstr "Entrepreneurship"
+
+msgid "Front End"
+msgstr "Front End"
+
+msgid "Legal"
+msgstr "Legal stuff"
+
+msgid "Novedades"
+msgstr "News"
+
+msgid "Sin categoría"
+msgstr "No category"
+
+msgid "Varios"
+msgstr "Other"
+
+msgid "Recursos"
+msgstr "Resources"
+
+msgid "¿Cómo funciona?"
+msgstr "How does it work?"
