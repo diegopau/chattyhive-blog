@@ -7695,9 +7695,6 @@ msgstr "Cerrar sesión"
 msgid "You do not have permission to upload files."
 msgstr "No tienes autorización para subir archivos."
 
-
-
-
 # PARA LAS CATEGORIAS
 msgid "Android App"
 msgstr "Android App"
