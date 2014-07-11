@@ -121,6 +121,7 @@ a.ft-jpbutton{margin-left:15px;float:left;margin-top:8px;color:#c2c2c2;font-size
 /* Pagination */
 #post-nav{text-align:center;margin-bottom:40px}#post-nav .pagination span,#post-nav .pagination a{display:inline-block;background:#ffb615;color:#fff;font-size:16px;line-height:45px;width:45px;height:45px;margin-right:10px;text-align:center;-webkit-border-radius:50%;-moz-border-radius:50%;border-radius:50%;text-decoration:none}#post-nav .pagination span.current{background:#222;color:#fff}#post-nav .pagination a:hover{background:#222;color:#fff}
 .comment_number{}
+.moretext
 
 /* Released by http://www.96ｄown.com */
 /*-----------------------------------------------------------------------------------*/
