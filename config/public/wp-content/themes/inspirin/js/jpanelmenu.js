@@ -12,10 +12,4 @@ var jPM = jQuery.jPanelMenu({
     closeOnContentClick: false
 });
 
-$('#main').click(function(event) {
-if (event.target.id != 'mobile-menu-button') {
-jPM.close();
-}
-});
-
 jPM.on();
