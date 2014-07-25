@@ -21,7 +21,7 @@
 <header id="header">
 	<div class="wrapper clearfix cabecera">
 		<div class="ft-lheader">
-			<a class="ft-jpbutton" href="#menu"><i class="icon-reorder"></i></a>	
+			<a class="ft-jpbutton" id="mobile-menu-button" href="#menu"><i class="icon-reorder"></i></a>	
 			<div class="ft-logo">
 				<?php if(!empty($smof_data['ft_logo'])): ?><?php if(is_home() || is_front_page()) : ?>
 				<h1 class="ct-logo"><a href="<?php echo esc_url( home_url( '/' ) ); ?>" title="<?php bloginfo('name'); ?>"><img src="<?php echo esc_url($smof_data['ft_logo']); ?>" width="<?php if(!empty($smof_data['ft_logo_width'])): ?><?php echo esc_attr($smof_data['ft_logo_width']); ?><?php endif; ?>" height="<?php if(!empty($smof_data['ft_logo_height'])): ?><?php echo esc_attr($smof_data['ft_logo_height']); ?><?php endif; ?>" alt="<?php bloginfo('name'); ?>" /></a></h1>
