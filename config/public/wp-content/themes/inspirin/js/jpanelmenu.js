@@ -12,8 +12,10 @@ var jPM = jQuery.jPanelMenu({
     closeOnContentClick: false
 });
 
-$('#main').click(function(event) {
-   jPM.close();
+$('.wrapper clearfix').click(function(event) {
+  if (event.target.id != 'mobile-menu-button') {
+    jPM.close();
+  }
 });
 
 jPM.on();
