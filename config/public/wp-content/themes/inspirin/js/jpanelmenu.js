@@ -8,7 +8,8 @@
 
 var jPM = jQuery.jPanelMenu({
     menu: '.primenu',
-    trigger: '.ft-jpbutton'
+    trigger: '.ft-jpbutton',
+    closeOnContentClick: false
 });
 
 $('#main').click(function(event) {
