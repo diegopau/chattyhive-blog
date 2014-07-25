@@ -12,4 +12,8 @@ var jPM = jQuery.jPanelMenu({
     closeOnContentClick: false
 });
 
+$('#main').click(function(event) {
+   jPM.close();
+});
+
 jPM.on();
