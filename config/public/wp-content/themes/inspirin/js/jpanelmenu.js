@@ -13,7 +13,9 @@ var jPM = jQuery.jPanelMenu({
 });
 
 $('.content-grid').click(function(event) {
-   jPM.close();
+  if (event.target.id != 'mobile-menu-button') {
+    jPM.close();
+  }
 });
 
 jPM.on();
