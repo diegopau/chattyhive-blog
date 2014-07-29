@@ -12,7 +12,7 @@ var jPM = jQuery.jPanelMenu({
     closeOnContentClick: false
 });
 
-$('.content-grid').click(function(event) {
+jQuery('#main').click(function(event) {
   if (event.target.id != 'mobile-menu-button') {
     jPM.close();
   }
