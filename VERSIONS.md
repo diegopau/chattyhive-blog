@@ -14,6 +14,9 @@ PHP
 * 5.3.9 (5.3-stable)
 
 Wordpress *downloaded directly* from [Wordpress](http://wordpress.org/download/release-archive/)
+* 4.1
+* 4.0.1
+* 4.0
 * 3.9.1
 * 3.9
 * 3.8.2
@@ -32,7 +35,7 @@ $ heroku create -s cedar
 $ heroku labs:enable user-env-compile
 $ heroku config:set NGINX_VERSION=1.5.0
 $ heroku config:set PHP_VERSION=5.4.11
-$ heroku config:set WORDPRESS_VERSION=3.5.1
+$ heroku config:set WORDPRESS_VERSION=4.1
 $ heroku config:set BUILDPACK_URL=https://github.com/mchung/heroku-buildpack-wordpress.git
 $ git push heroku master
 ```
@@ -41,7 +44,7 @@ Configure existing Wordpress on Heroku to use a specific version of Wordpress
 ```bash
 $ cd existing_wp
 $ heroku labs:enable user-env-compile
-$ heroku config:set WORDPRESS_VERSION=3.6.2
+$ heroku config:set WORDPRESS_VERSION=4.1
 $ git push heroku master
 ```
 
