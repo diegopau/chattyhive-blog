@@ -25,11 +25,11 @@ export_env_dir $3
 # appears to this script as a parameter..
 
 if [ -z "$NGINX_VERSION" ]; then
-  NGINX_VERSION=1.7.10
+  NGINX_VERSION=1.4.2
 fi
 
 if [ -z "$PHP_VERSION" ]; then
-  PHP_VERSION=5.5.21
+  PHP_VERSION=5.5.2
 fi
 
 if [ -z "$WORDPRESS_VERSION" ]; then
