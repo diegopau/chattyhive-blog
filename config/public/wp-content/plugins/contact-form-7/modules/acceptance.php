@@ -31,7 +31,7 @@ function wpcf7_acceptance_shortcode_handler( $tag ) {
 	$atts = array();
 
 	$atts['class'] = $tag->get_class_option( $class );
-	$atts['id'] = $tag->get_option( 'id', 'id', true );
+	$atts['id'] = $tag->get_id_option();
 	$atts['tabindex'] = $tag->get_option( 'tabindex', 'int', true );
 
 	if ( $tag->has_option( 'default:on' ) )
@@ -47,7 +47,7 @@ function wpcf7_acceptance_shortcode_handler( $tag ) {
 
 	$html = sprintf(
 		'<span class="wpcf7-form-control-wrap %1$s"><input %2$s />%3$s</span>',
-		$tag->name, $atts, $validation_error );
+		sanitize_html_class( $tag->name ), $atts, $validation_error );
 
 	return $html;
 }
@@ -69,8 +69,7 @@ function wpcf7_acceptance_validation_filter( $result, $tag ) {
 	$invert = $tag->has_option( 'invert' );
 
 	if ( $invert && $value || ! $invert && ! $value ) {
-		$result['valid'] = false;
-		$result['reason'][$name] = wpcf7_get_message( 'accept_terms' );
+		$result->invalidate( $tag, wpcf7_get_message( 'accept_terms' ) );
 	}
 
 	return $result;
@@ -134,7 +133,7 @@ function wpcf7_add_tag_generator_acceptance() {
 		'wpcf7-tg-pane-acceptance', 'wpcf7_tg_pane_acceptance' );
 }
 
-function wpcf7_tg_pane_acceptance( &$contact_form ) {
+function wpcf7_tg_pane_acceptance( $contact_form ) {
 ?>
 <div id="wpcf7-tg-pane-acceptance" class="hidden">
 <form action="">

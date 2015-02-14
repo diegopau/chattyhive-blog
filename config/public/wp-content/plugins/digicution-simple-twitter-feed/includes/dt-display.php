@@ -201,40 +201,62 @@ function dt_twitter_update($tweetNoOverride=NULL) {
 									
 						//Grab Tweet Entities
 						$entities = $t->entities;
-									
+								
 						//Set Counter To 0
 						$i = 0;
 						
-						//Convert URL Strings To Actual URLs
-						$tweet=dt_convert_urls($tweet);
-												
+						//For Each URL in Tweet - Convert It & Replace Tweet Text
+						foreach($entities->urls as $url) {
+							$indicate = $url->indices;
+							$replace[$i] = $url->url;
+							$string[$i] = "<a target='_blank' href='".$url->url."'>".$url->url."</a>";
+							$i++;
+						}
+						
+						//Add Mention Links 
+						foreach($entities->user_mentions as $mention) {
+							$indicate = $mention->indices;
+							$string[$i] = "<a target='_blank' href='http://www.twitter.com/".$mention->screen_name."'>".$mention->screen_name."</a>";
+							$replace[$i] = $mention->screen_name;
+							$i++;
+						}
+																		
 						//Loop Through Our Replacement Array & Make The Changes For URL's & Mention Links
 						for($i = 0; $i < count($string); $i++) {
 							$pattern = $replace[$i];
 							$tweet = str_replace($pattern, $string[$i], $tweet);
 						}
 						
+						//Convert Any Other URL Strings To Actual URLs
+						$tweet=dt_convert_urls($tweet);
+															
 						//Grab Tweet Date (UTC)
 						$date=strtotime($t->created_at);
 
 						//Date From Twitter Is UTC - As Is PHP's, Thus Date Comparison Of 2 Gives Us Correct Time Difference.  Thanks To Maciek Nowakiewic​z For Pointing This Out (And Saving Me Time Doing Ridonculous UTC Calcs :)
 						$date=human_time_diff($date,time());
 									
-						//Clean Twitter ID
-						$tweetid=mysql_real_escape_string($tweetid);
+						//Make Sure Twitter ID Is Integer
+						$tweetid=intval($tweetid);
 						
-						//Check If Tweet Exists In DB
-						$tweetCheck=$wpdb->prepare("SELECT id FROM $table_dt_twitter WHERE tweetid=%d",$tweetid);
-						$tweetChecker=$wpdb->get_row($tweetCheck,OBJECT);
-											
-						//If We Have A Tweet With This ID - Delete The Record So We Can Insert New One, Updating Is So Last Year :)
-						if (!empty($tweetChecker)) { $wpdb->query("DELETE FROM $table_dt_twitter WHERE tweetid=".$tweetid); }
+						//If We Have A Tweet ID
+						if($tweetid) {
+							
+							//Check If Tweet Exists In DB
+							$tweetCheck=$wpdb->prepare("SELECT id FROM $table_dt_twitter WHERE tweetid=%d",$tweetid);
+							$tweetChecker=$wpdb->get_row($tweetCheck,OBJECT);
+												
+							//If We Have A Tweet With This ID - Delete The Record So We Can Insert New One, Updating Is So Last Year :)
+							if(!empty($tweetChecker)) { $wpdb->query($wpdb->prepare("DELETE FROM $table_dt_twitter WHERE tweetid=%d",$tweetid)); }
+															
+							//Set Tweet Refresh Date (UTC Global)
+							$tweetrefreshdate=date('Y-m-d H:i:s',time());
+							
+							//Insert Tweet Into DB
+							$wpdb->insert($table_dt_twitter, array('tweetid' => $tweetid, 'tweet' => $tweet, 'screenname' => $user_screen_name, 'profileimage' => $image, 'tweetdate' => $tweetrefreshdate, 'retweet' => $retweet, 'fullname' => $user_full_name, 'location' => $user_location, 'tweetreaddate' => $date));	
 						
-						//Set Tweet Refresh Date (UTC Global)
-						$tweetrefreshdate=date('Y-m-d H:i:s',time());
-						
-						//Insert Tweet Into DB
-						$wpdb->insert($table_dt_twitter, array('tweetid' => $tweetid, 'tweet' => $tweet, 'screenname' => $user_screen_name, 'profileimage' => $image, 'tweetdate' => $tweetrefreshdate, 'retweet' => $retweet, 'fullname' => $user_full_name, 'location' => $user_location, 'tweetreaddate' => $date));	
+						//End If Tweet ID	
+						}
 				
 					//End If Tweetcount Is Not More Than Size
 					}
@@ -465,6 +487,9 @@ function dt_twitter_display($tweetNoOverride=NULL) {
 		//If We Have A Header Follow Button Option
 		if ($twitter_header_follow==2) { $twitteroutput.='<a href="https://twitter.com/'.$screenname.'" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false" data-dnt="true">Follow</a><script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?\'http\':\'https\';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+\'://platform.twitter.com/widgets.js\';fjs.parentNode.insertBefore(js,fjs);}}(document, \'script\', \'twitter-wjs\');</script>'; }
 
+		//If We Have A Header Follow Button Option With Screename
+		if ($twitter_header_follow==3) { $twitteroutput.='<a href="https://twitter.com/'.$screenname.'" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true" data-dnt="true">Follow &#64;'.$screenname.'</a><script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?\'http\':\'https\';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+\'://platform.twitter.com/widgets.js\';fjs.parentNode.insertBefore(js,fjs);}}(document, \'script\', \'twitter-wjs\');</script>'; }
+
 		//End Header
 		$twitteroutput.='</div>';
 
@@ -638,10 +663,10 @@ function dt_twitter_display($tweetNoOverride=NULL) {
 		if($dtauto==1) {
 	
 			//Get Our Font Styling
-			$fontstyle=''; $fontsize=$dt_twitter_display_fontsize; if($dt_twitter_display_fontsize_unit==1) { $fontstyle=' style="font-size:'.$fontsize.'px;line-height:'.$fontsize.'px;'; if($dt_twitter_display_fontcolor) { $fontstyle.='color:'.$dt_twitter_display_fontcolor.';'; } $fontstyle.='"'; } else { $fontstyle=' style="font-size:'.$fontsize.'em;line-height:'.$fontsize.'%;'; if($dt_twitter_display_fontcolor) { $fontstyle.='color:'.$dt_twitter_display_fontcolor.';'; } $fontstyle.='"'; }
+			$fontstyle=''; $fontsize=$dt_twitter_display_fontsize; if($dt_twitter_display_fontsize_unit==1) { $fontstyle=' style="font-size:'.$fontsize.'px;line-height:'.$fontsize.'px;'; if($dt_twitter_display_fontcolor) { $fontstyle.='color:'.$dt_twitter_display_fontcolor.';'; } $fontstyle.='"'; } else { $fontstyle=' style="font-size:'.$fontsize.'em;line-height:auto;'; if($dt_twitter_display_fontcolor) { $fontstyle.='color:'.$dt_twitter_display_fontcolor.';'; } $fontstyle.='"'; }
 			
 			//Get Our Link Styling
-			$linkstyle=''; $fontsize=$dt_twitter_display_fontsize; if($dt_twitter_display_fontsize_unit==1) { $linkstyle='style="font-size:'.$fontsize.'px;line-height:'.$fontsize.'px;'; if($dt_twitter_display_linkcolor) { $linkstyle.='color:'.$dt_twitter_display_linkcolor.';'; } $linkstyle.='"'; } else { $linkstyle='style="font-size:'.$fontsize.'em;line-height:'.$fontsize.'%;'; if($dt_twitter_display_linkcolor) { $linkstyle.='color:'.$dt_twitter_display_linkcolor.';'; } $linkstyle.='"'; }
+			$linkstyle=''; $fontsize=$dt_twitter_display_fontsize; if($dt_twitter_display_fontsize_unit==1) { $linkstyle='style="font-size:'.$fontsize.'px;line-height:'.$fontsize.'px;'; if($dt_twitter_display_linkcolor) { $linkstyle.='color:'.$dt_twitter_display_linkcolor.';'; } $linkstyle.='"'; } else { $linkstyle='style="font-size:'.$fontsize.'em;line-height:auto;'; if($dt_twitter_display_linkcolor) { $linkstyle.='color:'.$dt_twitter_display_linkcolor.';'; } $linkstyle.='"'; }
 			
 			//If We Have Tweet Link Color Set
 			if ($dt_twitter_display_linkcolor) { $req_tweet=str_replace('<a','<a style="color:'.$dt_twitter_display_linkcolor.';"',$req_tweet); }
@@ -749,6 +774,9 @@ function dt_twitter_display($tweetNoOverride=NULL) {
 	
 	//If We Have A Follow Button Option
 	if ($twitterfollow==2) { $twitteroutput.='<a href="https://twitter.com/'.$screenname.'" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false" data-dnt="true">Follow</a><script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?\'http\':\'https\';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+\'://platform.twitter.com/widgets.js\';fjs.parentNode.insertBefore(js,fjs);}}(document, \'script\', \'twitter-wjs\');</script>'; }
+	
+	//If We Have A Follow Button Option With Screename
+	if ($twitterfollow==3) { $twitteroutput.='<a href="https://twitter.com/'.$screenname.'" class="twitter-follow-button" data-show-count="false" data-show-screen-name="true" data-dnt="true">Follow &#64;'.$screenname.'</a><script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?\'http\':\'https\';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+\'://platform.twitter.com/widgets.js\';fjs.parentNode.insertBefore(js,fjs);}}(document, \'script\', \'twitter-wjs\');</script>'; }
 	
 	//Return The Output
 	return $twitteroutput;

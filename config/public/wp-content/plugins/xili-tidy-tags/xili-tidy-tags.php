@@ -4,13 +4,15 @@ Plugin Name: xili-tidy-tags
 Plugin URI: http://dev.xiligroup.com/xili-tidy-tags/
 Description: xili-tidy-tags is a tool for grouping tags by language or semantic group. Initially developed to enrich xili-language plugin and usable in all sites (CMS) and bbPress forum or others custom taxonomies.
 Author: dev.xiligroup.com - MS
-Version: 1.9.2
+Version: 1.10.0
 Author URI: http://dev.xiligroup.com
 License: GPLv2
 Text Domain: xili_tidy_tags
 Domain Path: /languages/
 */
 
+# 1.10.0 - 140313 - Tested WP 4.1 - fixes editing alias tags
+# 1.9.3 - 141128 - Fixes $news_id pointer in admin and WP_LANG for 4.x
 # 1.9.2 - 140313 - First tests with WP 3.9rc - es_ES and sr_RS translation added (contribution of http://firstsiteguide.com/)
 
 # 1.9.1 - 131229 - Deeper tests with WP 3.8 -
@@ -70,7 +72,7 @@ Domain Path: /languages/
 # License along with this plugin; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-define('XILITIDYTAGS_VER','1.9.2'); /* used in admin UI */
+define('XILITIDYTAGS_VER','1.10.0'); /* used in admin UI */
 
 class xili_tidy_tags {
 
@@ -216,6 +218,18 @@ class xili_tidy_tags {
 
 	function head_insert_metas() {
 		echo "<!-- for tag ". $this->post_tag .", website powered with xili-tidy-tags v.".XILITIDYTAGS_VER.", a WP plugin by dev.xiligroup.com -->\n";
+	}
+
+	function get_WPLANG () {
+		global $wp_version;
+		if ( version_compare($wp_version, '4.0', '<') ) {
+			if ( defined('WPLANG') )
+				return WPLANG;
+			else
+				return '';
+		} else {
+			return get_option( 'WPLANG', '' );
+		}
 	}
 
 	/**

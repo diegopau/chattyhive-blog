@@ -8,18 +8,21 @@
  * @updated 2.10.1 - 2014-02-26
  * @updated 2.11.0 - 2014-03-10 - alias refreshing
  * @updated 2.11.1 - 2014-03-17 - fixes notice - improved linl (date, postformat)
+ * @updated 2.13.2 - 2014-06-02 - fixes shortlink
+ * @updated 2.13.3 - 2014-06-09 - fixes preg_match - functions optimized
+ * @updated 2.14.0 - 2014-06-12 - fixes notices
  *
  */
 
 /**
- * called from xl_permalinks_init  (in theme functions.php)
+ * called from xl_permalinks_init (in theme functions.php)
  *
  */
 class XL_Permalinks_rules {
 
 	var $options = array ('rewrite' => true, 'force_lang' => 1 );
 	protected $rewrite_rules = array();
-	protected $always_rewrite = array('date', 'root', 'comments', 'search', 'author', 'post_format', 'language');
+	protected $always_rewrite = array('date', 'root', 'comments', 'search', 'author', 'post_format', 'language' );
 	protected $always_insert = array( 'type', 'date', 'author' );
 	var $language_slugs_list;
 	var $language_xili_settings = array();
@@ -41,16 +44,16 @@ class XL_Permalinks_rules {
 
 		add_filter ( 'redirect_canonical', array(&$this, 'redirect_canonical'), 10, 2 );
 
-		//$this->language_slugs_list = 'en|fr|es';
-		add_action ('pre_option_rewrite_rules', array(&$this,'prepare_rewrite_rules')) ;
+		add_action ( 'pre_option_rewrite_rules', array(&$this,'prepare_rewrite_rules'), 10) ;
 
 		// to build links
 		// to insert %lang% just after root
 		add_filter ( 'home_url', array(&$this, 'insert_lang_tag_root'), 10, 4 ); // add tag language when creating permalinks
-	 	add_filter ( 'pre_post_link', array(&$this, 'insert_lang_tag_4post'), 10, 3 );
+		add_filter ( 'pre_post_link', array(&$this, 'insert_lang_tag_4post'), 10, 3 );
 
 		// filters to replace %lang%
 		add_filter ( 'post_link', array(&$this, 'insert_lang_4post'), 10, 3 );
+		add_filter ( 'get_shortlink', array(&$this, 'insert_lang_shortlink'), 10, 4 ); // 2.13.2
 		add_filter ( 'post_type_link', array(&$this, 'insert_lang_4post_type'), 10, 3 );
 		add_filter ( '_get_page_link', array(&$this, 'insert_lang_4page'), 10, 2 );
 
@@ -107,18 +110,6 @@ class XL_Permalinks_rules {
 		$this->language_slugs_list = implode ("|", $language_qvs_all );
 	}
 
-	function authorized_custom_post_type () {
-
-		$custompoststype = $this->language_xili_settings['multilingual_custom_post'] ;
-		$custom = get_post_type_object ('post');
-		$clabels = $custom->labels;
-		$custompoststype['post'] = array( 'name' => $custom->label , 'singular_name' => $clabels->singular_name , 'multilingual' => 'enable');
-		$custom = get_post_type_object ('page');
-		$clabels = $custom->labels;
-		$custompoststype['page'] = array( 'name' => $custom->label, 'singular_name' => $clabels->singular_name , 'multilingual' => 'enable');
-		return $custompoststype;
-	}
-
 	function redirect_canonical ( $redirect_url, $requested_url ) {
 
 		if ( is_front_page() ) {
@@ -128,17 +119,19 @@ class XL_Permalinks_rules {
 		}
 	}
 
-
 	function prepare_rewrite_rules ( $pre ) {
-
+		global $xili_language;
 		foreach ($this->rewrite_rules as $type)
 			remove_filter($type . '_rewrite_rules', array(&$this, 'type_rewrite_rules'));
 
-		$enabled_post_type = array_keys ( $this->authorized_custom_post_type () );
+		$enabled_post_types = array_keys ( $xili_language->authorized_custom_post_type ( true ) );
 
-		$types = array_merge( $this->always_rewrite, $enabled_post_type , array ('category') );
+		// add taxonomies linked to enabled posts
+		$authorized_custom_taxonomies = $xili_language -> authorized_custom_taxonomies ( $enabled_post_types ) ;
 
-		if ( class_exists ( 'xili_tidy_tags' )  )
+		$types = array_merge( $this->always_rewrite, $enabled_post_types , array_merge ( array('category'), $authorized_custom_taxonomies ) );
+
+		if ( class_exists ( 'xili_tidy_tags' ) )
 			$types = array_merge( array ('post_tag'), $types );
 
 		$types = array_merge( $this->always_rewrite, $types );
@@ -148,7 +141,7 @@ class XL_Permalinks_rules {
 		foreach ($this->rewrite_rules as $type)
 				add_filter($type . '_rewrite_rules', array(&$this, 'type_rewrite_rules'));
 
-		add_filter('rewrite_rules_array', array(&$this, 'type_rewrite_rules')); // needed for post type archives
+		add_filter('rewrite_rules_array', array(&$this, 'type_rewrite_rules') ); // needed for post type archives
 
 		return $pre;
 	}
@@ -168,25 +161,23 @@ class XL_Permalinks_rules {
 			$slug = $wp_rewrite->root . ($this->options['rewrite'] ? '' : '/') . '('. $this->language_slugs_list .')/';
 		}
 		// for custom post type archives
-		$cpts = array_merge ( array_keys ( $this->language_xili_settings['multilingual_custom_post'] ),  array ( 'category' ) );
+		$cpts = array_merge ( array_keys ( $this->language_xili_settings['multilingual_custom_post'] ), array ( 'category' ) );
 		$cpts = $cpts ? '#post_type=('.implode('|', $cpts).')#' : '';
 
-		//  don't need the lang parameter for post types and post_tag taxonomy
+		// don't need the lang parameter for post types and post_tag taxonomy
 		$cpts_wo_lang = array_merge ( array_keys ( $this->language_xili_settings['multilingual_custom_post'] ), array ( 'post_tag', 'page', 'post' ) );
 
 		foreach ($rules as $key => $rule) {
-			//  don't need the lang parameter for post types and post_tag taxonomy
+			// don't need the lang parameter for post types and post_tag taxonomy
 
 			if ( $this->options['force_lang'] && in_array($filter, $cpts_wo_lang )) {
-				if (isset($slug)) {
-
-
-
+				if ( isset($slug) ) {
 					$newrules[$slug.str_replace($wp_rewrite->root, '', $key)] = str_replace(
 						array('[8]', '[7]', '[6]', '[5]', '[4]', '[3]', '[2]', '[1]'),
 						array('[9]', '[8]', '[7]', '[6]', '[5]', '[4]', '[3]', '[2]'),
 						$rule
 					); // hopefully it is sufficient! Yes Fréderic !
+
 				}
 			}
 
@@ -198,6 +189,7 @@ class XL_Permalinks_rules {
 						array('[9]', '[8]', '[7]', '[6]', '[5]', '[4]', '[3]', '[2]', '?' . $this->reqtag . '=$matches[1]&'),
 						$rule
 					); // should be enough!
+
 				}
 				unset($rules[$key]); // now useless
 			}
@@ -212,17 +204,22 @@ class XL_Permalinks_rules {
 	}
 
 	/**
- 	* fill permastruct of post, CPT, Category links
- *
+	 * insert lang rewrite tag in $url of post, CPT, Category and Taxonomy links
+	 *
 	 * @updated 1.1.2 - short link of post
 	 */
 	function insert_lang_tag_root ( $url, $path, $orig_scheme, $blog_id ) {
+
+		if ( false !== strpos( $url, $this->rew_reqtag ) ) return $url; // to avoid twice insertion
+
 		global $xili_language;
 
-		$enabled_custom_posts = array(); // fixes with only enabled 2.10.1
-		foreach ( $xili_language->xili_settings['multilingual_custom_post'] as $key => $values ) {
+		$enabled_custom_posts = $enabled_custom_post_types = array(); // fixes with only enabled 2.10.1
+
+		foreach ( $xili_language->xili_settings['multilingual_custom_post'] as $post_type => $values ) {
 			if ( $values['multilingual'] == 'enable') {
-				$enabled_custom_posts[] = $key ;
+				$enabled_custom_posts[] = '\/' . $post_type . '\/' ;
+				$enabled_custom_post_types[] = $post_type;
 			}
 		}
 
@@ -236,36 +233,43 @@ class XL_Permalinks_rules {
 		$category_base_option = get_option('category_base');
 		$tax_base[] = ($category_base_option) ? $category_base_option : 'category'; // à centraliser si class - ajouter "date"
 
-		if ( class_exists ( 'xili_tidy_tags' )  ) { // now gives lang of tags
+		if ( class_exists ( 'xili_tidy_tags' ) ) { // now gives lang of tags
 			$tag_base_option = get_option('tag_base');
 			$tax_base[] = ($tag_base_option) ? $tag_base_option : 'tag';
 		}
-		$tax_base = array_merge ( $tax_base, $this->always_insert );
-		$pattern_tax = '/(' . implode ( '|', $tax_base ) .')/';
+
+		$authorized_custom_taxonomies = $xili_language -> authorized_custom_taxonomies ( $enabled_custom_post_types ) ;
+		$tax_base = array_merge ( $tax_base, $this->always_insert, $authorized_custom_taxonomies );
+
+		$tax_base_slash = array();
+		foreach ( $tax_base as $base ) $tax_base_slash[] = '\/' . $base . '\/';
+		$pattern_tax = '/(' . implode ( '|', $tax_base_slash ) .')/'; // add / around
+
 
 
 		if ( class_exists ( 'bbpress' ) ) {
 
-			if ( $path == bbp_get_root_slug().'/'   ) {
+			if ( $path == bbp_get_root_slug().'/' ) {
 				$replace = $xili_language->lang_slug_qv_trans ( $xili_language->default_slug ) ;
-				$url = str_replace( $path, $replace . '/' . $path,  $url ) ;
+				$url = str_replace( $path, $replace . '/' . $path, $url ) ;
 				return $url ;
 			} else if ( false !== strpos( $path, bbp_get_root_slug() ) && preg_match ( $pattern, $path ) ) {
-				$url = str_replace( $path, $this->rew_reqtag . '/' . $path,  $url ) ;
+				$url = str_replace( $path, $this->rew_reqtag . '/' . $path, $url ) ;
 				return $url ;
 			}
 
 		}
 
 		if ( $pattern && preg_match ( $pattern, $path ) ) {
+			xili_xl_error_log ( __CLASS__ . ' # ' . __LINE__ .' ' . $path.' ici 1 ' . $url ); // CPT
+			$path = ( substr ($path,0,1) == '/' ) ? $path : '/' . $path ;
+			$url = str_replace( $path, '/' . $this->rew_reqtag . $path, $url ) ;
 
-			$url = str_replace( $path, '/' . $this->rew_reqtag . $path,  $url ) ; // error_log('ici 1 '); // CPT
+		} else if ( preg_match ( $pattern_tax, $path ) ) {
+			$url = str_replace( $path, '/' . $this->rew_reqtag . $path, $url ) ; xili_xl_error_log ( __CLASS__ . ' # ' . __LINE__ .' ici 2 tax ' . $url );
 
-		} else if ( preg_match ( $pattern_tax, $path )  ) {
-			$url = str_replace( $path, '/' .  $this->rew_reqtag .  $path,  $url ) ; // error_log('ici 2 ');
-
-		} else if (  '' != $path && '/' != substr( $path, 0, 1 ) && false === strpos( $path, $this->rew_reqtag ) ) {
-			$url = str_replace( $path, $this->rew_reqtag . '/' . $path,  $url ) ; // error_log('ici 3 '); // page
+		} else if ( '' != $path && '/' != substr( $path, 0, 1 ) && false === strpos( $path, $this->rew_reqtag ) ) {
+			$url = str_replace( $path, $this->rew_reqtag . '/' . $path, $url ) ; xili_xl_error_log ( __CLASS__ . ' # ' . __LINE__ .' ici 3 ' . $url ); // page
 
 		}
 
@@ -273,19 +277,38 @@ class XL_Permalinks_rules {
 	}
 
 	/**
-	 * fill permastruct of post links
+	 * insert lang_tag (req_tag) in permastruct of post links
 	 *
 	 *
 	 */
 	function insert_lang_tag_4post ( $permalink, $post, $leavename ) {
-
-
 		if ( false !== strpos( $permalink, '?p=' ) ) return $permalink;
+		if ( false !== strpos( $permalink, $this->rew_reqtag ) ) return $permalink; // to avoid twice insertion
 
 		return $this->rew_reqtag . $permalink;
 	}
 
+	/**
+	 * Function series to replace reqtag by lang alias
+	 */
+	function insert_lang_shortlink ( $shortlink, $id, $context, $allow_slugs ) {
+		global $xili_language;
+		if ( $id == 0 ) {
+			$post = get_post( $id ); // get current post
+			if (!$post) return $shortlink;
+			$post_id = $post->ID;
+		} else {
+			$post_id = $id;
+		}
 
+		$post_lang_slug = $xili_language->get_post_language ( $post_id );
+		if ( $post_lang_slug != "" ) {
+			$shortlink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $post_lang_slug ) , $shortlink ) ;
+		} else {
+			$shortlink = str_replace( '/' . $this->rew_reqtag, '' , $shortlink ) ;
+		}
+		return $shortlink;
+	}
 
 	function insert_lang_4post ( $permalink, $post, $leavename ) {
 
@@ -294,9 +317,9 @@ class XL_Permalinks_rules {
 		$post_lang_slug = $xili_language->get_post_language ( $post->ID );
 
 		if ( $post_lang_slug != "" ) {
-			$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $post_lang_slug ) , $permalink )  ;
+			$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $post_lang_slug ) , $permalink ) ;
 		} else {
-			$permalink = str_replace( '/' . $this->rew_reqtag, '' , $permalink )  ;
+			$permalink = str_replace( '/' . $this->rew_reqtag, '' , $permalink ) ;
 		}
 
 		return $permalink;
@@ -308,7 +331,7 @@ class XL_Permalinks_rules {
 		// get authorized post_types
 		$post_type = get_post_type( $post->ID );
 
-		$custompoststype = $xili_language->xili_settings['multilingual_custom_post']  ;
+		$custompoststype = $xili_language->xili_settings['multilingual_custom_post'] ;
 		$custompoststype_keys = array_keys( $custompoststype );
 
 		if (in_array($post_type, $custompoststype_keys ) && $custompoststype [$post_type]['multilingual'] == 'enable') {
@@ -316,25 +339,24 @@ class XL_Permalinks_rules {
 			$post_lang_slug = $xili_language->get_post_language ( $post->ID );
 
 			if ( $post_lang_slug != "" ) {
-				$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $post_lang_slug ) , $permalink )  ;
+				$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $post_lang_slug ) , $permalink ) ;
 			} else {
-				$permalink = str_replace( '/' . $this->rew_reqtag, '' , $permalink )  ;
+				$permalink = str_replace( '/' . $this->rew_reqtag, '' , $permalink ) ;
 			}
 		}
 
 		return $permalink;
 	}
-
-
+	// page
 	function insert_lang_4page ( $permalink, $post_id ) {
 
 		global $xili_language;
 
 		$post_lang_slug = $xili_language->get_post_language ( $post_id );
 		if ( $post_lang_slug != "" ) {
-			$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $post_lang_slug ) , $permalink )  ;
+			$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $post_lang_slug ) , $permalink ) ;
 		} else {
-			$permalink = str_replace( '/' . $this->rew_reqtag, '' , $permalink )  ;
+			$permalink = str_replace( '/' . $this->rew_reqtag, '' , $permalink ) ;
 		}
 
 		return $permalink;
@@ -352,8 +374,7 @@ class XL_Permalinks_rules {
 
 		return $this->insert_cur_lang ( $permalink );
 	}
-
-
+	// used by date, author components
 	function insert_cur_lang ( $permalink ) {
 		global $xili_language;
 		if ( is_admin() ) return $permalink ; // in menus builder - not resolve %lang%
@@ -362,7 +383,7 @@ class XL_Permalinks_rules {
 
 		if ( $the_lang == '' ) $the_lang = xili_language_trans_slug_qv ( $xili_language->default_slug );
 
-		$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $the_lang ) , $permalink )  ;
+		$permalink = str_replace( $this->rew_reqtag, $xili_language->lang_slug_qv_trans ( $the_lang ) , $permalink ) ;
 		return $permalink;
 	}
 
@@ -370,9 +391,9 @@ class XL_Permalinks_rules {
 		global $xili_language, $xili_tidy_tags, $post;
 
 		if ( is_admin() ) return $termlink ; // in menus builder - not resolve %lang%
-		$the_lang = ( $xili_language->doing_list_language === false ) ? $xili_language->lang_slug_qv_trans ( the_curlang() ) : $xili_language->lang_slug_qv_trans ( $xili_language->doing_list_language ); // by default
+		$do_replace = false ;
 
-		//$the_lang = $xili_language->lang_slug_qv_trans ( the_curlang() ); // by default
+		$the_lang = ( $xili_language->doing_list_language === false ) ? $xili_language->lang_slug_qv_trans ( the_curlang() ) : $xili_language->lang_slug_qv_trans ( $xili_language->doing_list_language ); // by default
 
 		if ( $the_lang == '' ) $the_lang = xili_language_trans_slug_qv ( $xili_language->default_slug );
 
@@ -383,47 +404,60 @@ class XL_Permalinks_rules {
 				return $termlink;
 			}
 
-			$the_lang = $xili_language->get_post_language ( $post->ID );
+			$the_post_lang = $xili_language->get_post_language ( $post->ID );
 
-			if ( $the_lang )
-				$termlink = str_replace( $this->rew_reqtag, xili_language_trans_slug_qv ( $the_lang ) , $termlink);
+			if ( $the_post_lang )
+				$termlink = str_replace( $this->rew_reqtag, xili_language_trans_slug_qv ( $the_post_lang ) , $termlink);
 			else
 				$termlink = str_replace( $this->rew_reqtag, xili_language_trans_slug_qv ( $xili_language->default_slug ) . LANG_UNDEF , $termlink);
-		}
 
-		if ( in_array ( $taxonomy , array ( 'language' , 'post_format') ) ) {
+			return $termlink;
 
-			$termlink = str_replace( $this->rew_reqtag, $the_lang  , $termlink);
-		}
+		} else if ( in_array ( $taxonomy , array ( 'language' , 'post_format' ) ) ) {
 
-		if ( 'post_tag' == $taxonomy ) {
+			$do_replace = true;
 
+		} else if ( 'post_tag' == $taxonomy ) {
 			// lang of the post_tag if xili-tidy-tags exists...
-			if ( class_exists ( 'xili_tidy_tags' )  ) {
+			if ( class_exists ( 'xili_tidy_tags' ) ) {
 
 				// search lang of tag
-				$langs = $xili_tidy_tags->return_lang_of_tag ( $term->term_id );
+				$tag_langs = $xili_tidy_tags->return_lang_of_tag ( $term->term_id );
 
-				if ( $langs ) {
-					$the_lang = xili_language_trans_slug_qv ( $langs[0]->slug );
+				if ( $tag_langs ) {
+					$the_tag_lang = xili_language_trans_slug_qv ( $tag_langs[0]->slug );
+					$termlink = str_replace( $this->rew_reqtag, $the_tag_lang, $termlink);
+					return $termlink;
 				}
 
-				$termlink = str_replace( $this->rew_reqtag, ''.$the_lang  , $termlink);
 			} else {
-				$termlink = str_replace( $this->rew_reqtag, ''.$the_lang  , $termlink);
+				$do_replace = true;
 			}
 		}
 
+		if ( !$do_replace ) {
+
+			$enabled_post_type = array_keys ( $xili_language->authorized_custom_post_type ( true ) );
+			// taxonomies linked to enabled posts
+			$authorized_custom_taxonomies = $xili_language -> authorized_custom_taxonomies ( $enabled_post_type ) ;
+
+			if ( in_array ( $taxonomy , $authorized_custom_taxonomies ) ) {	// test if linked to authorized CPT
+
+				$do_replace = true;
+			}
+		}
+
+		if ( $do_replace ) $termlink = str_replace( $this->rew_reqtag, $the_lang, $termlink );
 		return $termlink ;
 	}
 
-	// added 2.10.0 for paging link on home
+	// insert curlang if paging link on home
 	function insert_lang_pagenum_link ( $link ) {
 		global $xili_language, $wp_rewrite;
 		$the_lang = $xili_language->lang_slug_qv_trans ( the_curlang() ); // by default
 		$home = trailingslashit( get_bloginfo( 'url' ) );
 		//if ( $the_lang == '' ) $the_lang = xili_language_trans_slug_qv ( $xili_language->default_slug );
-		if ( $the_lang != '' &&  false === strpos ( $link, '/'.$the_lang ) ) {
+		if ( $the_lang != '' && false === strpos ( $link, '/'.$the_lang ) ) {
 
 			return str_replace( $home.$wp_rewrite->root, $home.$wp_rewrite->root.$the_lang.'/', $link );
 		}

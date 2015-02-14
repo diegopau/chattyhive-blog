@@ -69,6 +69,12 @@
 				});
 			});
 		}
+
+		this.find('.wpcf7-character-count').wpcf7CharacterCount();
+
+		this.find('.wpcf7-validates-as-url').change(function() {
+			$(this).wpcf7NormalizeUrl();
+		});
 	};
 
 	$.wpcf7AjaxSuccess = function(data, status, xhr, $form) {
@@ -128,7 +134,7 @@
 		$(data.into).trigger('submit.wpcf7');
 
 		if (1 == data.mailSent)
-			$form.resetForm().clearForm();
+			$form.resetForm();
 
 		$form.find('[placeholder].placeheld').each(function(i, n) {
 			$(n).val($(n).attr('placeholder'));
@@ -136,7 +142,9 @@
 
 		$responseOutput.append(data.message).slideDown('fast');
 		$responseOutput.attr('role', 'alert');
-	}
+
+		$.wpcf7UpdateScreenReaderResponse($form, data);
+	};
 
 	$.fn.wpcf7ExclusiveCheckbox = function() {
 		return this.find('input:checkbox').click(function() {
@@ -224,10 +232,63 @@
 		});
 	};
 
+	$.fn.wpcf7CharacterCount = function() {
+		return this.each(function() {
+			var $count = $(this);
+			var name = $count.attr('data-target-name');
+			var down = $count.hasClass('down');
+			var starting = parseInt($count.attr('data-starting-value'), 10);
+			var maximum = parseInt($count.attr('data-maximum-value'), 10);
+			var minimum = parseInt($count.attr('data-minimum-value'), 10);
+
+			var updateCount = function($target) {
+				var length = $target.val().length;
+				var count = down ? starting - length : length;
+				$count.attr('data-current-value', count);
+				$count.text(count);
+
+				if (maximum && maximum < length) {
+					$count.addClass('too-long');
+				} else {
+					$count.removeClass('too-long');
+				}
+
+				if (minimum && length < minimum) {
+					$count.addClass('too-short');
+				} else {
+					$count.removeClass('too-short');
+				}
+			};
+
+			$count.closest('form').find(':input[name="' + name + '"]').each(function() {
+				updateCount($(this));
+
+				$(this).keyup(function() {
+					updateCount($(this));
+				});
+			});
+		});
+	};
+
+	$.fn.wpcf7NormalizeUrl = function() {
+		return this.each(function() {
+			var val = $.trim($(this).val());
+
+			if (! val.match(/^[a-z][a-z0-9.+-]*:/i)) { // check the scheme part
+				val = val.replace(/^\/+/, '');
+				val = 'http://' + val;
+			}
+
+			$(this).val(val);
+		});
+	};
+
 	$.fn.wpcf7NotValidTip = function(message) {
 		return this.each(function() {
 			var $into = $(this);
-			$into.hide().append('<span role="alert" class="wpcf7-not-valid-tip">' + message + '</span>').slideDown('fast');
+
+			$into.find('span.wpcf7-not-valid-tip').remove();
+			$into.append('<span role="alert" class="wpcf7-not-valid-tip">' + message + '</span>');
 
 			if ($into.is('.use-floating-validation-tip *')) {
 				$('.wpcf7-not-valid-tip', $into).mouseover(function() {
@@ -304,6 +365,33 @@
 			$(this).find('span.wpcf7-not-valid-tip').remove();
 			$(this).find('img.ajax-loader').css({ visibility: 'hidden' });
 		});
+	};
+
+	$.wpcf7UpdateScreenReaderResponse = function($form, data) {
+		$('.wpcf7 .screen-reader-response').html('').attr('role', '');
+
+		if (data.message) {
+			var $response = $form.siblings('.screen-reader-response').first();
+			$response.append(data.message);
+
+			if (data.invalids) {
+				var $invalids = $('<ul></ul>');
+
+				$.each(data.invalids, function(i, n) {
+					if (n.idref) {
+						var $li = $('<li></li>').append($('<a></a>').attr('href', '#' + n.idref).append(n.message));
+					} else {
+						var $li = $('<li></li>').append(n.message);
+					}
+
+					$invalids.append($li);
+				});
+
+				$response.append($invalids);
+			}
+
+			$response.attr('role', 'alert').focus();
+		}
 	};
 
 	$.wpcf7SupportHtml5 = function() {

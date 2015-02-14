@@ -33,10 +33,19 @@ class WPCF7_ShortcodeManager {
 		$tags = array_filter( array_unique( (array) $tag ) );
 
 		foreach ( $tags as $tag ) {
+			$tag = $this->sanitize_tag_type( $tag );
+
 			$this->shortcode_tags[$tag] = array(
 				'function' => $func,
 				'has_name' => (boolean) $has_name );
 		}
+	}
+
+	private function sanitize_tag_type( $tag ) {
+		$tag = preg_replace( '/[^a-zA-Z0-9_*]+/', '_', $tag );
+		$tag = rtrim( $tag, '_' );
+		$tag = strtolower( $tag );
+		return $tag;
 	}
 
 	public function remove_shortcode( $tag ) {
@@ -241,7 +250,7 @@ class WPCF7_Shortcode {
 
 	public function get_option( $opt, $pattern = '', $single = false ) {
 		$preset_patterns = array(
-			'date' => '[0-9]{4}-[0-9]{2}-[0-9]{2}',
+			'date' => '([0-9]{4}-[0-9]{2}-[0-9]{2}|today(.*))',
 			'int' => '[0-9]+',
 			'signed_int' => '-?[0-9]+',
 			'class' => '[-0-9a-zA-Z_]+',
@@ -277,6 +286,10 @@ class WPCF7_Shortcode {
 		}
 	}
 
+	public function get_id_option() {
+		return $this->get_option( 'id', 'id', true );
+	}
+
 	public function get_class_option( $default = '' ) {
 		if ( is_string( $default ) )
 			$default = explode( ' ', $default );
@@ -302,6 +315,12 @@ class WPCF7_Shortcode {
 	}
 
 	public function get_maxlength_option( $default = '' ) {
+		$option = $this->get_option( 'maxlength', 'int', true );
+
+		if ( $option ) {
+			return $option;
+		}
+
 		$matches_a = $this->get_all_match_options(
 			'%^(?:[0-9]*x?[0-9]*)?/([0-9]+)$%' );
 
@@ -311,6 +330,16 @@ class WPCF7_Shortcode {
 		}
 
 		return $default;
+	}
+
+	public function get_minlength_option( $default = '' ) {
+		$option = $this->get_option( 'minlength', 'int', true );
+
+		if ( $option ) {
+			return $option;
+		} else {
+			return $default;
+		}
 	}
 
 	public function get_cols_option( $default = '' ) {
@@ -337,11 +366,38 @@ class WPCF7_Shortcode {
 		return $default;
 	}
 
-	public function get_default_option() {
+	public function get_date_option( $opt ) {
+		$option = $this->get_option( $opt, 'date', true );
+
+		if ( preg_match( '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $option ) ) {
+			return $option;
+		}
+
+		if ( preg_match( '/^today(?:([+-][0-9]+)([a-z]*))?/', $option, $matches ) ) {
+			$number = isset( $matches[1] ) ? (int) $matches[1] : 0;
+			$unit = isset( $matches[2] ) ? $matches[2] : '';
+
+			if ( ! preg_match( '/^(day|month|year|week)s?$/', $unit ) ) {
+				$unit = 'days';
+			}
+
+			$date = gmdate( 'Y-m-d',
+				strtotime( sprintf( 'today %1$s %2$s', $number, $unit ) ) );
+			return $date;
+		}
+
+		return false;
+	}
+
+	public function get_default_option( $default = '', $args = '' ) {
+		$args = wp_parse_args( $args, array(
+			'multiple' => false ) );
+
 		$options = (array) $this->get_option( 'default' );
+		$values = array();
 
 		if ( empty( $options ) ) {
-			return false;
+			return $args['multiple'] ? $values : $default;
 		}
 
 		foreach ( $options as $opt ) {
@@ -355,12 +411,67 @@ class WPCF7_Shortcode {
 				$user_prop = $user->get( $opt );
 
 				if ( ! empty( $user_prop ) ) {
-					return $user_prop;
+					if ( $args['multiple'] ) {
+						$values[] = $user_prop;
+					} else {
+						return $user_prop;
+					}
+				}
+
+			} elseif ( 'post_meta' == $opt && in_the_loop() ) {
+				if ( $args['multiple'] ) {
+					$values = array_merge( $values,
+						get_post_meta( get_the_ID(), $this->name ) );
+				} else {
+					$val = (string) get_post_meta( get_the_ID(), $this->name, true );
+
+					if ( strlen( $val ) ) {
+						return $val;
+					}
+				}
+				
+			} elseif ( 'get' == $opt && isset( $_GET[$this->name] ) ) {
+				$vals = (array) $_GET[$this->name];
+				$vals = array_map( 'wpcf7_sanitize_query_var', $vals );
+
+				if ( $args['multiple'] ) {
+					$values = array_merge( $values, $vals );
+				} else {
+					$val = isset( $vals[0] ) ? (string) $vals[0] : '';
+
+					if ( strlen( $val ) ) {
+						return $val;
+					}
+				}
+
+			} elseif ( 'post' == $opt && isset( $_POST[$this->name] ) ) {
+				$vals = (array) $_POST[$this->name];
+				$vals = array_map( 'wpcf7_sanitize_query_var', $vals );
+
+				if ( $args['multiple'] ) {
+					$values = array_merge( $values, $vals );
+				} else {
+					$val = isset( $vals[0] ) ? (string) $vals[0] : '';
+
+					if ( strlen( $val ) ) {
+						return $val;
+					}
 				}
 			}
 		}
 
-		return false;
+		if ( $args['multiple'] ) {
+			$values = array_unique( $values );
+			return $values;
+		} else {
+			return $default;
+		}
+	}
+
+	public function get_data_option( $args = '' ) {
+		$options = (array) $this->get_option( 'data' );
+
+		return apply_filters( 'wpcf7_form_tag_data_option', null, $options, $args );
 	}
 
 	public function get_first_match_option( $pattern ) {

@@ -3,8 +3,8 @@ Contributors: digicution
 Donate link: http://www.digicution.com/
 Tags: twitter,feed,tweet,simple,list,display,digicution
 Requires at least: 3.1
-Tested up to: 3.8.1
-Stable tag: 1.4.2.7
+Tested up to: 4.1
+Stable tag: 1.4.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,7 +13,9 @@ This plugin provides a simple list of Tweets from a users screen name for usage 
 
 == Description ==
 
-* Brand New Wordpress 3.8 Responsive Interface Design - Fully Backwards Compatible With Earlier Wordpress Releases.
+* If using OpenSSL encryption and upgrading from a version below 1.4.2.9 - you will be required to re-enter your Twitter API details to comply with the latest OpenSSL iv security implementation.
+
+Wordpress 3.8 Responsive Interface Design - Fully Backwards Compatible With Earlier Wordpress Releases.
 
 This plugin provides a simple list of Tweets from a users screen name for usage within your Wordpress Blog or Template.  
 
@@ -59,7 +61,16 @@ Serbian Translation courtesy of Borisa Djuraskovic from http://www.webhostinghub
 
 1. Upload the folder 'digicution-simple-twitter-feed' to the '/wp-content/plugins/' directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Create your Twitter Application at https://dev.twitter.com/ and create a set of API Keys for your application.
+3. Create your Twitter Application by following these steps:
+	a).  Go to https://dev.twitter.com/
+	b).  In the page footer, click on Tools -> Manage Your Apps
+	c).  Click Create New App
+	d).  Fill In App Details, you can leave the Callback URL field blank
+	e).  Once your app has been created, click on the Keys and Access Tokens tab
+	f).  Under Application Settings, you'll find your Consumer Key (API Key) & Consumer Secret (API Secret)
+	g).  Scroll down to Your Access Token and under Token Actions, click Create my access token
+	h).  Once this is completed, it will reveal your Access Token & Access Token Secret
+	i).  Now you have all the info you need, just copy these bits into the Simple Twitter 'Twitter App Settings' page and click 'Update Application Options'
 4. Add the Access Token, Access Token Secret, Consumer Key & Consumer Secret to Main Page of 'Simple Twitter' Options Page
 5. Ensure you change the Twitter Username value from 'digicution' to your Twitter Username to display your Tweets!
 6. Configure display options in 'Simple Twitter' Options Page
@@ -103,6 +114,10 @@ OK, Double check... No, triple check that you have the correct Access Token, Acc
 
 Please make sure that you have added YOUR Twitter Username into the Twitter Username option on the General Settings page.
 
+= My Tweet Follow Buttons are not showing, only the link text is being displayed? =
+
+This means that the app cannot reach Twitter's API server from your client machine.  Double check you haven't got any apps that are blocking access.  One that has been found to do so is the Avast Anti Virus Browser Plugin.  There is a setting within the Avast plugin titled "Block social networks by default".  Disable this and you should be golden.  Unfortunately, this is a client side restriction so there's nothing that can be done about it at present - this would be the same if you were to use Twitter's native Follow button :(
+
 = I have a question, bug or feature request...  Where can I submit it? =
 
 No problemo, just head to http://www.digicution.com/contact/ and submit the contact form with your question/bug/request - I'll get back to you as soon as I possibly can :)
@@ -119,6 +134,18 @@ No problemo, just head to http://www.digicution.com/contact/ and submit the cont
 
 
 == Changelog ==
+
+= 1.4.3 =
+* Fixed bug with URL detection in some tweets where no space in front of URL string
+
+= 1.4.2.9 =
+* Fixed error when cleansing Tweet ID’s that generated a warning in PHP Log Files.  Thanks to Tony Hernandez for highlighting the issue.
+* Updated OpenSSL to use IV as required by PHP 5.3.3 - Fixes repeated OpenSSL warning in log file.  This will require re-entry of Twitter API information if using OpenSSL.  Thanks to Tony Hernandez for highlighting the issue.
+* Checked compatibility with Wordpress 4.0 / 4.1
+
+= 1.4.2.8 =
+* Fixed 'line-height' bug if Tweet Font Size set to 'ems'.  Thanks to Ian Clarke for highlighting the issue.
+* Added @Screenname option to Follow Buttons (Header & Footer).  Extra request from Ian Clarke.
 
 = 1.4.2.7 =
 * Changed Tweet ID to use ‘id_str’ instead as original number could cause erronous input on some PHP installations.
@@ -183,6 +210,9 @@ No problemo, just head to http://www.digicution.com/contact/ and submit the cont
 
 
 == Upgrade Notice ==
+
+= 1.4.2.9 =
+If using OpenSSL encryption and upgrading from a version below 1.4.2.9 - you will be required to re-enter your Twitter API details to comply with the latest OpenSSL iv security implementation.
 
 = 1.4 =
 Upgrade For SVG Tweet Icon Support & Native Twitter UTC Date Support

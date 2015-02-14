@@ -10,18 +10,31 @@
  */
 
 
-if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) || is_multisite() ) {// must done site by site 
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) || is_multisite() ) {// must done site by site
 	echo 'Impossible to erase plugin settings in multisite mode - need to done site by site before erasing folder !';
 	exit();
 }
-// check if delete_settings is set 
+// check if delete_settings is set
 
 $xl_settings = get_option('xili_language_settings');
 
-if ( $xl_settings['delete_settings'] == 'delete'  ) {
+if ( $xl_settings['delete_settings'] == 'delete' ) {
 	
 	delete_taxonomies ($xl_settings);
 	
+	/* since 2.12 for author_rules */
+	global $wpdb;
+	$meta_key_list = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM $wpdb->options WHERE option_name LIKE %s AND option_name LIKE %s ", '%author_rules', 'xiliml_%' ));
+
+	if ( $meta_key_list ) {
+		foreach ( $meta_key_list as $one_meta_key ) {
+			delete_option($one_meta_key);
+		}
+	}
+	/* since 2.12 for author_rules */
+	delete_option('xiliml_authoring_settings'); // future uses
+	delete_option('xiliml_frontend_settings');
+
 	// Options
 	delete_option('xili_language_widgets_options');
 	delete_option('xili_widget_recent_comments');
@@ -33,7 +46,7 @@ function delete_taxonomies ($xl_settings) {
 	
 	// temporary register taxonomies (plugin is deactivated)
 	
-	register_taxonomy( $xl_settings['taxonomy'], 'post', array('hierarchical' => false, 'label' => false, 'rewrite' => false,   'show_ui' => false, '_builtin' => false ));
+	register_taxonomy( $xl_settings['taxonomy'], 'post', array('hierarchical' => false, 'label' => false, 'rewrite' => false, 'show_ui' => false, '_builtin' => false ));
 	register_taxonomy( $xl_settings['taxolangsgroup'], 'term', array('hierarchical' => false, 'update_count_callback' => '', 'show_ui' => false, 'label'=>false, 'rewrite' => false, '_builtin' => false ));
 	register_taxonomy( 'link_'.$xl_settings['taxonomy'], 'link', array('hierarchical' => false, 'label' => false, 'rewrite' => false, 'show_ui' => false, '_builtin' => false ));
 	
@@ -47,7 +60,7 @@ function delete_taxonomies ($xl_settings) {
 	foreach ($languages as $language ) {
 		$postmeta_suffixes[] = $language->slug ;
 	}
-	foreach ($languages as $language )  {
+	foreach ($languages as $language ) {
 		
 		$term_id = $language->term_id;
 		
@@ -59,15 +72,15 @@ function delete_taxonomies ($xl_settings) {
 				if ( $language->slug != $postmeta_suffix ) delete_post_meta( $post_ID, $xl_settings['reqtag'].'-'.$postmeta_suffix ) ;
 			}
 			// delete relationships posts
-	 		wp_delete_object_term_relationships( $post_ID, $xl_settings['taxonomy'] );
+			wp_delete_object_term_relationships( $post_ID, $xl_settings['taxonomy'] );
 		}
 		
-	 	wp_delete_object_term_relationships( $term_id, $xl_settings['taxolangsgroup'] );
+		wp_delete_object_term_relationships( $term_id, $xl_settings['taxolangsgroup'] );
 		
 		// link_language links
 		$links = get_objects_in_term( array( $term_id ), array( 'link_'.$xl_settings['taxonomy'] ) );
 		
-		foreach ( $links as $link ) {	   
+		foreach ( $links as $link ) {
 			wp_delete_object_term_relationships( $link, 'link_'.$xl_settings['taxonomy'] );
 		}
 		
@@ -75,13 +88,13 @@ function delete_taxonomies ($xl_settings) {
 		$linklang = term_exists($language->slug,'link_'.$xl_settings['taxonomy']);
 			if ( $linklang ) wp_delete_term( $term_id, 'link_'.$xl_settings['taxonomy'] );
 		wp_delete_term( $term_id, $xl_settings['taxonomy'] );
-	 
-	} 
+
+	}
 	$term_group = term_exists( 'ev_er', 'link_'.$xl_settings['taxonomy'] ); /* special ever language for links */
 	// link_language links
 	$links = get_objects_in_term( array( $term_group['term_id'] ), array( 'link_'.$xl_settings['taxonomy'] ) );
 		
-	foreach ( $links as $link ) {	   
+	foreach ( $links as $link ) {
 		wp_delete_object_term_relationships( $link_id, 'link_'.$xl_settings['taxonomy'] );
 	}
 	wp_delete_term( $term_group['term_id'], 'link_'.$xl_settings['taxonomy'] );

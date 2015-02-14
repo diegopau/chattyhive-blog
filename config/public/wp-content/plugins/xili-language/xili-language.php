@@ -5,11 +5,28 @@ Plugin URI: http://dev.xiligroup.com/xili-language/
 Description: This plugin modify on the fly the translation of the theme depending the language of the post or other blog elements - a way to create a real multilanguage site (cms or blog). Numerous template tags and three widgets are included. It introduce a new taxonomy - here language - to describe posts and pages. To complete with tags, use also xili-tidy-tags plugin. To include and set translation of .mo files use xili-dictionary plugin. Includes add-on for multilingual bbPress forums.
 Author: dev.xiligroup.com - MS
 Author URI: http://dev.xiligroup.com
-Version: 2.11.1
+Version: 2.16.1
 License: GPLv2
 Text Domain: xili-language
 Domain Path: /languages/
 */
+# updated 141221 - 2.16.1 - fixes find_files if no wp-content/languages/themes
+# updated 141218 - 2.16.0 - ready for twentyfifteen and 4.1 - now search also parent mo file in WP_LANG_DIR if not in theme folder
+# updated 141216 - 2.15.4 - ready for twentyfifteen and 4.1-RC1 - fixes links rights - new filter for description (2015 nav menu)
+# updated 141111 - 2.15.3 - ready for twentyfifteen and 4.1-beta1
+# updated 140915 - 2.15.2 - change WP_LANG constant to get_WPLANG() to be compatible with WPLANG option since 4.0
+# updated 140825 - 2.15.1 - params in add_theme_support ( 'custom_xili_flag', args ) - possible default flags in theme (see twentyfourteen-xili as example) - improved get_listlanguages() function
+# updated 140727 - 2.15.0 - new way/option to use flag of media asset -
+# updated 140616 - 2.14.1 - settings news pointer, css improved - add debug options - fixes findposts.js (WP 3.9 broken)
+# updated 140610 - 2.14.0 - permalinks class improved - link functions optimized - plugin's mo file switcher improved
+# updated 140602 - 2.13.2b - authorized_custom_post_type() fixed
+# updated 140602 - 2.13.2 - fixes settings for new CPT, better selector (msgid for XD), XD again in bar admin, widget language file merged in main file of plugin
+# updated 140528 - 2.13.1 - fixes theme customize broken, issue fixed with xx-YY.mo file if no child theme (set_mofile)
+# updated 140526 - 2.13.0 - xml import improved, GlotPress importation improved
+# updated 140516 - 2.12.1 - improved choice in parent/child mo priority - try to search local- in WP_LANG_DIR - improved all xml export
+# updated 140512 - 2.12.0 - includes propagate options previously available only in theme's class, 2 tabs of settings rewritten, multiple post_types query included (thanks to muh), new xili18n shortcode
+# updated 140421 - 2.11.3 - fixes - style improved in translations metabox
+# updated 140411 - 2.11.2 - accurate counter for CPT - more tests with 3.9 - improving nav menu classes assignation with _wp_menu_item_classes_by_context
 # updated 140317 - 2.11.1 - add filter to enable Featured_Content class of current theme and disable Featured_Content class of JetPack. Changes ajax/json for WP3.9. Fixes and improves menus links (format, date)
 # updated 140307 - 2.11.0 - add new function is_xili_curlang() returning true or false depending passed language slug, the_curlang (xili_curlang) improved, clean wp pointers, [xl-class-admin] improves infos in form for alias refreshing in permalinks, new locales (based on jetpack)
 # updated 140302 - 2.10.3 - fixes in add-on
@@ -29,7 +46,7 @@ Domain Path: /languages/
 # updated 1306, 130716 - 2.8.10 - test for jetpack, WP3.6-rc1
 # updated 130527 - 2.8.9 - fixes, __construct in widget classes.
 # updated 130519 - 2.8.8k - temporary fixes for ka_GE (replace ge_GE for Georgian) - changes https to http for glotpress (WP server changed)
-# updated 130422 - 130512  - 2.8.8 - fixes notice with bbPress 2.3 - try to find .mo files at automattic svn and GlotPress - best title in href language list - new way to insert languages list in navigation menu - better filter in menu/widget title - clean $wp_roles on deactivating - fixes findposts js - the_other_posts improved to return list.
+# updated 130422 - 130512 - 2.8.8 - fixes notice with bbPress 2.3 - try to find .mo files at automattic svn and GlotPress - best title in href language list - new way to insert languages list in navigation menu - better filter in menu/widget title - clean $wp_roles on deactivating - fixes findposts js - the_other_posts improved to return list.
 # updated 130416 - 2.8.7 - fixes lang_perma if search, fixes IE matching(z8po), add option 'Posts selected in' for language_list title link
 # updated 130322 - 2.8.6 - verify QUETAG value - improve html attributes - improves searchform js
 # updated 130313 - 2.8.5 - add feature to improve pages list insertion
@@ -75,11 +92,12 @@ Domain Path: /languages/
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 
-define('XILILANGUAGE_VER', '2.11.1'); /* used in admin UI*/
-define('XILILANGUAGE_WP_VER', '3.7'); /* used in error - see at end */
+define('XILILANGUAGE_VER', '2.16.1'); /* used in admin UI*/
+define('XILILANGUAGE_WP_VER', '3.9'); /* used in error - see at end */
 define('XILILANGUAGE_PHP_VER', '5.0.0'); /* used in error - see at end */
-define('XILILANGUAGE_PREV_VER', '2.9.21');
-define('XILILANGUAGE_DEBUG', false ); /* used in dev step UI see #5183 - xili_xl_error_log () */
+define('XILILANGUAGE_PREV_VER', '2.11.3');
+
+define('XILILANGUAGE_DEBUG', false ); /* used in dev step UI - xili_xl_error_log () if WP_DEBUG is true */
 
 
 
@@ -89,12 +107,14 @@ class xili_language {
 
 	var $xili_settings; /* saved in options */
 
-	var $langs_group_id; /* group ID and Term Taxo ID */
-	var $langs_group_tt_id;
+	var $langs_group_id = 0; /* group ID and Term Taxo ID */
+	var $langs_group_tt_id = 0;
 
 	var $default_lang; /* language of config.php*/
 	var $default_slug; /* slug of language of config.php since 1.5.3 wpmu*/
 	var $curlang;
+
+	private $ready_to_join_filter = false; /* to avoid sql error if no join - posts_where is called before posts_join filter 2.12 */
 
 	var $thetextdomain = ""; /* since 1.5.2 - used if multiple */
 	var $langstate; /* undefined or not */
@@ -115,7 +135,7 @@ class xili_language {
 
 	var $langs_list_options = array (); // now set in init 2.8.6
 
-	var $comment_form_labels = array ( // since 1.6.0 for comment_form
+	var $comment_form_labels = array ( // since 1.6.0 for comment_form - updated 2.16.0
 		'name' => 'Name',
 		'email' => 'Email',
 		'website' => 'Website',
@@ -123,8 +143,8 @@ class xili_language {
 		'youmustbe' => 'You must be <a href="%s">logged in</a> to post a comment.',
 		'loggedinas' => 'Logged in as <a href="%1$s">%2$s</a>. <a href="%3$s" title="Log out of this account">Log out?</a>',
 		'emailnotpublished' => 'Your email address will not be published.',
-		'requiredmarked' => ' Required fields are marked <span class="required">*</span>',
-		'youmayuse' => 'You may use these <abbr title="HyperText Markup Language">HTML</abbr> tags and attributes:',
+		'requiredmarked' => 'Required fields are marked %s',
+		'youmayuse' => 'You may use these <abbr title="HyperText Markup Language">HTML</abbr> tags and attributes: %s',
 		'leavereply' => 'Leave a Reply',
 		'replyto' => 'Leave a Reply to %s',
 		'cancelreply' => 'Cancel reply',
@@ -154,12 +174,12 @@ class xili_language {
 	var $show_page_on_front_array = array(); // array of lang=>page_id if show_on_front == page
 
 	var $undefchar = "."; // 2.2.3 - used to detect undefined
-	var $sublang = ""; // 2.2.3 - used to detect - or fr_fr- of like
+	private $sublang = ""; // 2.2.3 - used to detect - or fr_fr- of like private - used to search undefined
 	var $doing_list_language = false; // 2.11.1 set to loop lang slug when doing list languages
 
-	// 2.5
+	// 2.5 2.15
 	// other in class admin
-	var $translation_state = '_xl_translation_state' ; // set to initial when post created from dashboard metabox (to update post slug)
+	var $translation_state = '_xl_translation_state' ; // set to initial + coming lang when post created from dashboard metabox (to update post slug)
 
 	// 2.6 - class admin in separate file
 	var $file_file = ''; // see in construct below
@@ -187,7 +207,27 @@ class xili_language {
 	var $insertion_point_box_title_menu = 'Menus list Insertion point';
 	var $insertion_point_dummy_link_menu = '#insertmenu';
 
-	/**** Construct is future ****/
+	// since 2.12 - propagate when create
+
+	var $propagate_options_default_ref = array (
+		'post_format' => array ( 'default'=> '1', 'data' => 'attribute', 'hidden' => '' ),
+		'page_template' => array ( 'default'=> '1', 'data' => 'meta' , 'hidden' => ''),
+		'comment_status' => array ( 'default'=> '', 'data' => 'post' , 'hidden' => '' ),
+		'ping_status' => array ( 'default'=> '', 'data' => 'post' , 'hidden' => ''),
+		'post_parent' => array ( 'default'=> '', 'data' => 'post' , 'hidden' => '1' ),
+		'menu_order' => array ( 'default'=> '', 'data' => 'post' , 'hidden' => '1' ),
+		'thumbnail_id' => array ( 'default'=> '1', 'data' => 'meta' , 'hidden' => '') );
+
+	var $propagate_options_default; // will be updated by filter in xl-class-admin
+	var $propagate_options_labels = array();
+
+	var $menu_slug_sep = '--'; // use in menus insertion point class - 2.12.2
+
+	var $unusable_domains = array ( 'xili-dictionary', 'xili-language', 'xili_language_errors', 'bbpress' ); // bbPress by add-on
+
+	var $authorized_taxonomies = array (); // used by link_template...
+
+	var $flag_settings_name; // to get and save (in admin) current theme flag option
 
 	public function __construct( $locale_method = false, $show = false, $class_admin = false ) {
 
@@ -196,12 +236,14 @@ class xili_language {
 		$this->file_basename = basename(__FILE__) ;
 		$this->plugin_basename = plugin_basename(__FILE__) ;
 		$this->plugin_url = plugins_url('', __FILE__) ;
-		$this->plugin_path = plugin_dir_path(__FILE__) ;
+		$this->plugin_path = plugin_dir_path(__FILE__) ; // with / at end
 		$this->ossep = strtoupper( substr(PHP_OS ,0 ,3 ) == 'WIN' ) ? '\\' : '/';
 
 		$this->locale_method = $locale_method; /* added for compatibility with cache plugin from johan */
 		$this->show = $show;
 		$this->class_admin = $class_admin;
+
+		$this->flag_settings_name = get_option ('stylesheet') . '-xili-flag-options' ;
 
 		/* activated when first activation of plug */
 		register_activation_hook( __FILE__, array(&$this, 'xili_language_activate') );
@@ -218,6 +260,7 @@ class xili_language {
 		 * get current settings
 		 */
 		$this->xili_settings = get_option( 'xili_language_settings', false );
+
 		if( false === $this->xili_settings ) { //1.9.1
 			$this->xili_settings = $this->initial_settings ();
 			update_option('xili_language_settings', $this->xili_settings );
@@ -237,20 +280,20 @@ class xili_language {
 				$this->xili_settings['external_xl_style'] = "on";
 				$this->xili_settings['creation_redirect'] = 'redirect'; // default - after initial creation
 				$this->xili_settings['version'] = '2.2';
-				update_option('xili_language_settings', $this->xili_settings);  //
+				update_option('xili_language_settings', $this->xili_settings); //
 			}
 			if ($this->xili_settings['version'] == '2.2') { /* 2.8.3 */
 				$this->xili_settings['nav_menu_separator'] = "|";
 				$this->xili_settings['version'] = '2.3';
-				update_option('xili_language_settings', $this->xili_settings);  //
+				update_option('xili_language_settings', $this->xili_settings); //
 			}
 			if ($this->xili_settings['version'] == '2.3') { /* 2.8.4 */
 				$this->xili_settings['pforp_select'] = "select"; // no_select,
 				$this->xili_settings['version'] = '2.4';
-				update_option('xili_language_settings', $this->xili_settings);  //
+				update_option('xili_language_settings', $this->xili_settings); //
 			}
 			if ($this->xili_settings['version'] == '2.4') { /* 2.8.4.3 */
-				if ( isset($this->xili_settings['domains']['all'] ) )  unset ( $this->xili_settings['domains']['all'] ) ; // no_all for plugins
+				if ( isset($this->xili_settings['domains']['all'] ) ) unset ( $this->xili_settings['domains']['all'] ) ; // no_all for plugins
 				// move all value to new array
 				$this->xili_settings['page_in_nav_menu_array'] = '';
 				if ( isset( $this->xili_settings['navmenu_check_optionp'] ) ) {
@@ -268,7 +311,7 @@ class xili_language {
 				}
 
 				$this->xili_settings['version'] = '2.5';
-				update_option('xili_language_settings', $this->xili_settings);  //
+				update_option('xili_language_settings', $this->xili_settings); //
 			}
 			if ($this->xili_settings['version'] == '2.5') { /* 2.8.4.4 */
 				$this->xili_settings['list_pages_check_option'] = 'fixe';
@@ -278,9 +321,9 @@ class xili_language {
 			// 'Posts selected in %s' 2.8.7
 			if ($this->xili_settings['version'] == '2.6') {
 				$this->xili_settings['list_link_title'] = array ( 'post_selected' => 'Posts selected in %s',
-											 'current_post' => 'Current post in %s',
-											 'latest_posts' => 'Latest posts in %s', // used in xili-language list,
-											 'view_all_posts' => 'View all posts in %s'); //  the_category (and XD);
+										'current_post' => 'Current post in %s',
+										'latest_posts' => 'Latest posts in %s', // used in xili-language list,
+										'view_all_posts' => 'View all posts in %s'); //	the_category (and XD);
 				$this->xili_settings['version'] = '2.7';
 				update_option('xili_language_settings', $this->xili_settings);
 			}
@@ -307,7 +350,20 @@ class xili_language {
 				}
 				update_option('xili_language_settings', $this->xili_settings);
 			}
-			if ( ! isset ( $this->xili_settings['version'] ) || $this->xili_settings['version'] != '2.11') { // repair or restart from new
+			// 2.12.1
+			if ($this->xili_settings['version'] == '2.11') {
+				$this->xili_settings['version'] = '2.12';
+				if ( $this->xili_settings['mo_parent_child_merging'] === true ) $this->xili_settings['mo_parent_child_merging'] = "parent-priority";
+				update_option('xili_language_settings', $this->xili_settings);
+			}
+			// 2.15.1
+			if ($this->xili_settings['version'] == '2.12') {
+				$this->xili_settings['version'] = '2.15';
+				$this->xili_settings['langs_group_id'] = 0;
+				$this->xili_settings['langs_group_tt_id'] = 0;
+				update_option('xili_language_settings', $this->xili_settings);
+			}
+			if ( ! isset ( $this->xili_settings['version'] ) || $this->xili_settings['version'] != '2.15') { // repair or restart from new
 				$this->initial_settings ();
 				update_option('xili_language_settings', $this->xili_settings);
 			}
@@ -346,21 +402,23 @@ class xili_language {
 		/* 'wp' = where theme's language is defined just after query */
 		if ( $this->xili_settings['wp_locale'] == 'wp_locale' )
 			add_action( 'wp', array(&$this,'xili_locale_setup'), 15 ); // since 2.4
+		//
 		if ( $this->locale_method )
 			add_filter('locale', array(&$this,'xiliml_setlocale'), 10);
 		/* to be compatible with l10n cache from Johan since 1.1.9 */
 
- 		add_filter( 'widget_title', array(&$this,'one_text'), 9 ); /* added 0.9.8.1 - 9 to avoid quotation filter 2.8.8 */
-	 	add_filter( 'widget_text', array(&$this,'one_text'));
+		add_filter( 'widget_title', array(&$this,'one_text'), 9 ); /* added 0.9.8.1 - 9 to avoid quotation filter 2.8.8 */
+		add_filter( 'widget_text', array(&$this,'one_text'));
 
 		add_filter( 'list_cats', array(&$this,'xiliml_cat_language'), 10, 2 ); /* mode 2 : content = name */
 		add_filter( 'link_category', array(&$this,'one_text')); // 1.6.0 for wp_list_bookmarks (forgotten)
-		add_filter( 'category_link', array(&$this,'xiliml_link_append_lang'), 10, 2 );
+		//add_filter( 'category_link', array(&$this,'xiliml_link_append_lang'), 10, 2 );
+		add_filter ( 'term_link', array(&$this,'xiliml_term_link_append_lang'), 10, 3 ); // both category and post_tag - 2.13.3 ( category_link / tag_link filter are obsolete)
 
 		add_filter( 'category_description',array(&$this,'xiliml_link_translate_desc'));
 		add_filter( 'single_cat_title',array(&$this,'xiliml_single_cat_title_translate')); /* 1.4.1 wp_title() */
 
-		add_filter( 'tag_link', array(&$this,'xiliml_taglink_append_lang' ));
+		//add_filter( 'tag_link', array(&$this,'xiliml_taglink_append_lang' )); // see above - only used if lang_perma
 
 		add_filter( 'bloginfo', array(&$this,'xiliml_bloginfo'), 10, 2); /* since 1.6.0 - description - date - time */
 
@@ -374,7 +432,7 @@ class xili_language {
 
 		add_filter( 'option_page_on_front', array(&$this, 'translate_page_on_front_ID') ); /* 1.7.0 */
 
-		/* bookmarks and widget_links  1.8.5  #2500 */
+		/* bookmarks and widget_links 1.8.5 #2500 */
 		add_filter( 'widget_links_args', array( &$this, 'widget_links_args_and_lang' ), 10, 1 ); // in class WP_Widget_Links (default-widgets.php)
 		add_filter( 'get_bookmarks', array( &$this, 'the_get_bookmarks_lang' ), 10, 2); // only active if 'lang' in wp_list_bookmarks()
 
@@ -391,6 +449,8 @@ class xili_language {
 			add_filter( 'gettext_with_context', array(&$this,'change_plugin_domain_with_context'), 10, 4); /* 1.8.8 */
 			add_filter( 'ngettext', array(&$this,'change_plugin_domain_plural'), 10, 5);
 			add_filter( 'ngettext_with_context', array(&$this,'change_plugin_domain_plural_with_context'), 10, 6);
+
+			add_action( 'xiliml_add_frontend_mofiles', array(&$this,'load_plugin_domain_for_curlang'), 10, 2);
 
 			// for wp nav menu
 			add_filter( 'the_title', array(&$this,'wp_nav_title_text'), 9, 2); // 9 to be before RIGHT SINGLE QUOTATION MARK filter 2.8.8 - thanks to PouletFou
@@ -410,12 +470,12 @@ class xili_language {
 					add_filter( 'walker_nav_menu_start_el', 'xili_nav_page_home_item', 10, 4 ); // add lang if - 1.8.9.2
 
 			if ( version_compare($wp_version, '3.4.9', '>') ) {// new behaviour - add dummy if lang nav or page nav (
-				if ( '' != $this->xili_settings['in_nav_menu']  || '' != $this->xili_settings['page_in_nav_menu_array'] ) {
+				if ( '' != $this->xili_settings['in_nav_menu'] || '' != $this->xili_settings['page_in_nav_menu_array'] ) {
 					add_filter( 'wp_nav_menu_args', 'xili_nav_menu_args', 10, 1 ); // filter in nav-menu-template.php 2.8.3
 				}
 			}
 
-			add_filter( 'language_attributes',  array(&$this,'head_language_attributes'));
+			add_filter( 'language_attributes', array(&$this,'head_language_attributes'));
 			add_action( 'wp_head', array(&$this,'head_insert_hreflang_link' ), 10 ); // since 2.5
 
 			add_filter( 'option_date_format', array(&$this, 'translate_date_format') ); /* 1.7.0 */
@@ -443,38 +503,50 @@ class xili_language {
 		add_action( 'xiliml_the_category', array(&$this, 'the_category' ), 10, 3);
 		add_filter( 'xiliml_langinsearchform', array(&$this, 'xiliml_langinsearchform' ), 10, 3); // 1.8.2 action to filter
 
-	// verify theme and set ltd for both parent and admin child
+		// verify theme and set ltd for both parent and admin child
 		add_filter( 'override_load_textdomain', array(&$this,'xiliml_override_load'), 10, 3); // since 1.5.0
 		add_filter( 'theme_locale', array(&$this,'xiliml_theme_locale'), 10, 2);	// two times if is_admin()
 
-		//
+		// propagation when creation
 		add_action( 'xl_propagate_post_attributes', array(&$this,'propagate_categories'), 10, 2); // 2.8.8
+
+		// to translate inside content according current post language - 2.12.0
+		add_shortcode ( 'xili18n', array(&$this,'xili18n_shortcode' ) );
+		// to display part of content according current language - 2.13.3
+		add_shortcode ( 'xili-show-if', array(&$this,'xili_content_if_shortcode' ) );
+
+		// to return URI of flag assigned to a language
+		add_shortcode ( 'xili-flag', array(&$this,'xili_multilingual_flag' ) );
+
+		add_action ( 'wp_head', array(&$this,'insert_xili_flag_css_in_header' ), 12 ); // 2.15 after bundled old version
+
+		add_action ('after_setup_theme', array(&$this,'bundled_themes_support_flag' ), 12 ); // bundled themes
 
 	}
 
 	/**
 	 * first activation or empty settings
 	 */
-	function initial_settings() {  xili_xl_error_log ( '# 460 -------------------- init' );
+	function initial_settings() { xili_xl_error_log ( '# ' . __LINE__ .' -------------------- init' );
 		return array(
-			    'taxonomy'		=> 'language',
-			    'version' 		=> '2.8',
-			    'reqtag'		=> 'lang', // query_var
-			    'browseroption' => '',
-			    'authorbrowseroption' => '',
-			    'taxolangsgroup' => 'languages_group',
-			    'functions_enable' => '',
-			    'langs_folder' => '',
-			    'theme_domain' => '',
-			    'homelang' => '',
-			    'langs_list_status' => '',
-			    'in_nav_menu' => '',
-			    'page_in_nav_menu' => '',
-			    'page_in_nav_menu_array' =>'',
+				'taxonomy'		=> 'language',
+				'version'		=> '2.15',
+				'reqtag'		=> 'lang', // query_var
+				'browseroption' => '',
+				'authorbrowseroption' => '',
+				'taxolangsgroup' => 'languages_group',
+				'functions_enable' => '',
+				'langs_folder' => '',
+				'theme_domain' => '',
+				'homelang' => '',
+				'langs_list_status' => '',
+				'in_nav_menu' => '',
+				'page_in_nav_menu' => '',
+				'page_in_nav_menu_array' =>'',
 				'args_page_in_nav_menu' => '',
 				'multilingual_custom_post' => array(),
 				'langs_in_root_theme' => '',
-				'domains' => array( 'default' => 'disable', 'bbpress' => 'disable' ),  // no default domain to theme domain 1.8.7 - no all 2.8.4.3
+				'domains' => array( 'default' => 'disable', 'bbpress' => 'disable' ), // no default domain to theme domain 1.8.7 - no all 2.8.4.3
 				'widget' => 'enable',
 				'delete_settings' => '', //1.8.8 for uninstall
 				'allcategories_lang' => 'browser', // 1.8.9.1
@@ -491,22 +563,25 @@ class xili_language {
 				'shortqv_slug_array' => array(), // special perma
 				'list_pages_check_option' => 'fixe', // 2.8.5
 				'list_link_title' => array ( 'post_selected' => 'Posts selected in %s',
-											 'current_post' => 'Current post in %s',
-											 'latest_posts' => 'Latest posts in %s', // used in xili-language list (and XD)
-											 'view_all_posts' => 'View all posts in %s' ), // used in the_category
-				'mo_parent_child_merging' => false,	// 2.8.8
-				'parent_langs_folder'  => '',
+											'current_post' => 'Current post in %s',
+											'latest_posts' => 'Latest posts in %s', // used in xili-language list (and XD)
+											'view_all_posts' => 'View all posts in %s' ), // used in the_category
+				'mo_parent_child_merging' => '',	// 2.12
+				'parent_langs_folder' => '',
 				'enable_fc_theme_class' => 'enable', // 2.11.1 - priority to theme Featured Content Class and not jetpack
-				'theme_alias_cache' => array()
-		    );
+				'theme_alias_cache' => array(),
+				'langs_group_id' => 0,
+				'langs_group_tt_id'=> 0, // 2.15.1
+				'languages_list' => array() // 2.15.2
+		);
 	}
 
 	/* first activation of plugin */
 	function xili_language_activate() {
-		$this->xili_settings = get_option('xili_language_settings', false ); xili_xl_error_log('# 508 -- xl first activate');
+		$this->xili_settings = get_option('xili_language_settings', false ); xili_xl_error_log( '# ' . __LINE__ .' -- xl first activate');
 		if ( $this->xili_settings === false ) {
 			$this->xili_settings = $this->initial_settings();
-		    update_option('xili_language_settings', $this->xili_settings );
+			update_option('xili_language_settings', $this->xili_settings );
 		}
 
 	}
@@ -538,13 +613,13 @@ class xili_language {
 		$wp_roles->remove_cap ( 'editor', 'xili_language_clone_tax' );
 
 		// remove settings if..
-		if ( is_multisite() && isset ( $this->xili_settings['delete_settings'] ) &&  $this->xili_settings['delete_settings'] == "delete_this" ) {
+		if ( is_multisite() && isset ( $this->xili_settings['delete_settings'] ) && $this->xili_settings['delete_settings'] == "delete_this" ) {
 
 			$languages = get_terms($this->xili_settings['taxonomy'], array('hide_empty' => false));
 			foreach ($languages as $language ) {
 				$postmeta_suffixes[] = $language->slug ;
 			}
-			foreach ($languages as $language )  {
+			foreach ($languages as $language ) {
 
 				$term_id = $language->term_id;
 
@@ -556,10 +631,10 @@ class xili_language {
 						if ( $language->slug != $postmeta_suffix ) delete_post_meta( $post_ID, $this->xili_settings['reqtag'].'-'.$postmeta_suffix ) ;
 					}
 				// delete relationships posts
-	 				wp_delete_object_term_relationships( $post_ID, $this->xili_settings['taxonomy'] );
+					wp_delete_object_term_relationships( $post_ID, $this->xili_settings['taxonomy'] );
 				}
 
-	 			wp_delete_object_term_relationships( $term_id, $this->xili_settings['taxolangsgroup'] );
+				wp_delete_object_term_relationships( $term_id, $this->xili_settings['taxolangsgroup'] );
 
 				// link_language links
 				$links = get_objects_in_term( array( $term_id ), array( 'link_'.$this->xili_settings['taxonomy'] ) );
@@ -591,6 +666,18 @@ class xili_language {
 			delete_option('xili_widget_recent_comments');
 			delete_option('xili_widget_recent_entries');
 			delete_option('xili_language_settings');
+		}
+	}
+
+	function get_WPLANG () {
+		global $wp_version;
+		if ( version_compare($wp_version, '4.0', '<') ) {
+			if ( defined('WPLANG') )
+				return WPLANG;
+			else
+				return '';
+		} else {
+			return get_option( 'WPLANG', '' );
 		}
 	}
 
@@ -642,28 +729,28 @@ class xili_language {
 	 *
 	 */
 	function init_and_register_language_post_taxonomy () {
-		/** add new taxonomy in available taxonomies
-		 * 1.0.2 - add label false as http://core.trac.wordpress.org/ticket/10437
-		 * 			to avoid metabox as tag displayed  , 'query_var' => QUETAG
-		 * @updated 1.4.1
-		 */
+
+		$post_type_array = array_keys( $this->authorized_custom_post_type( true ) ); // to be fully registered for xml export // 2.12.1 - 2.13.2 b only fully authorized
+
+ 		if ( class_exists( 'xili_dictionary' ) ) $post_type_array[] = 'xdmsg' ; // XD active
 
 		if ( $this->xili_settings['wp_locale'] == 'wp_locale' )
 			xiliml_declare_xl_wp_locale ();
 
 		if ( $this->lang_perma ) {
 
-			register_taxonomy( TAXONAME, 'post', array('hierarchical' => false, 'label' => false, 'rewrite' => false , 'update_count_callback' => array(&$this, '_update_post_lang_count'), 'show_ui' => false, '_builtin' => false, 'query_var' => QUETAG ));
+			register_taxonomy( TAXONAME, $post_type_array, array('hierarchical' => false, 'label' => false, 'rewrite' => false , 'update_count_callback' => array(&$this, '_update_post_lang_count'), 'show_ui' => false, '_builtin' => false, 'query_var' => QUETAG ));
 			$this->lpr = "-"; // 2.3.2
 
 		} else {
 			add_filter('query_vars', array(&$this,'keywords_addQueryVar')); // now in taxonomy decl. // 2.1.1
-			register_taxonomy( TAXONAME, 'post', array('hierarchical' => false, 'label' => false, 'rewrite' => false , 'update_count_callback' => array(&$this, '_update_post_lang_count'), 'show_ui' => false, '_builtin' => false ));
+			register_taxonomy( TAXONAME, $post_type_array, array('hierarchical' => false, 'label' => false, 'rewrite' => false , 'update_count_callback' => array(&$this, '_update_post_lang_count'), 'show_ui' => false, '_builtin' => false ));
 
 		}
 
 		register_taxonomy( TAXOLANGSGROUP, 'term', array('hierarchical' => false, 'update_count_callback' => '', 'show_ui' => false, 'label'=>false, 'rewrite' => false, '_builtin' => false ));
 
+		$this->authorized_taxonomies = $this->authorized_custom_taxonomies ( $post_type_array );
 
 	}
 
@@ -673,11 +760,10 @@ class xili_language {
 	 */
 	function init_vars () {
 		// type of languages list see options in xili_language_list or navmenu - third param = title for option
-
 		$this->langs_list_options = array(
-			array('', __('default', 'xili-language'),  __('default title', 'xili-language')),
-			array('typeone', __('Type #1', 'xili-language'), __('Type #1 title', 'xili-language')),
-			array('typeonenew', __('Type for single', 'xili-language'), __('Type for single title', 'xili-language')),
+			array('', __('Nav to home', 'xili-language'), __('Links redirect to home.', 'xili-language')),
+			array('typeone', __('Nav to home (w/o cur lang.)', 'xili-language'), __('Current language is not inserted and links redirect to home.', 'xili-language')),
+			array('typeonenew', __('Nav to Singular (w/o cur lang.)', 'xili-language'), __('Current language is not inserted and links redirect to post or page if exists in other languages.', 'xili-language')),
 			array('navmenu', __('Nav Menu', 'xili-language'), __('List of all languages are inserted and links redirect to home.', 'xili-language')),
 			array('navmenu-a', __('Nav Menu (w/o current lang.)', 'xili-language'), __('Current language is not inserted and links redirect to home.', 'xili-language')) ,
 			array('navmenu-1', __('Nav Menu Singular', 'xili-language'), __('List of all languages are inserted and links redirect to post or page if exists in other languages.', 'xili-language')),
@@ -686,8 +772,9 @@ class xili_language {
 		);
 
 		/* default values */
-		if ( ''!= WPLANG && ( strlen( WPLANG )==5 || strlen( WPLANG ) == 2 ) ) : // for japanese
-			$this->default_lang = WPLANG;
+		$wplang = $this->get_WPLANG();
+		if ( ''!= $wplang && ( strlen( $wplang )==5 || strlen( $wplang ) == 2 ) ) : // for japanese
+			$this->default_lang = $wplang;
 		else:
 			$this->default_lang = 'en_US';
 		endif;
@@ -703,38 +790,45 @@ class xili_language {
 
 
 			if ( array() == $list_languages ) { /*create two default lines with the default language (as in config)*/
-		  		/* language of WP */
-		  		if (!class_exists('GP_Locales'))
-		  			require_once ( $this->plugin_path .'/xili-includes.locales.php' );
+				/* language of WP */
+				if (!class_exists('GP_Locales')) {
+					require_once ( $this->plugin_path .'xili-includes/locales.php' ); // thanks hnygard 20141212
+				}
+
 
 				$term = 'en_US';
 				$args = array( 'alias_of' => '', 'description' => 'english', 'parent' => 0, 'slug' =>'en_us');
 
-				$theids = $this->safe_lang_term_creation ( $term, $args );
-				if ( ! is_wp_error($theids) ) {
-					wp_set_object_terms($theids['term_id'], 'the-langs-group', TAXOLANGSGROUP);
+				$term_data = $this->safe_lang_term_creation ( $term, $args );
+				if ( ! is_wp_error( $term_data ) ) {
+					wp_set_object_terms( $term_data['term_id'], 'the-langs-group', TAXOLANGSGROUP );
 					$this->xili_settings['lang_features']['en_us'] = array('charset'=>"",'hidden'=>"");
+				} else {
+					$inserted = $this->safe_insert_in_language_group ( $term_data, 0 );
 				}
+
 				$term = $this->default_lang;
 
 				$locale_2 = GP_Locales::by_field( 'wp_locale', $term );
 
-		 		$desc = ( $locale_2 ) ? $locale_2->english_name : $this->default_lang;
+				$desc = ( $locale_2 ) ? $locale_2->english_name : $this->default_lang;
 				$desc_array = explode (' (', $desc );
-		 		$desc = $desc_array[0];
+				$desc = $desc_array[0];
 
-		 		$slug = strtolower( $this->default_lang ) ; // 2.3.1
-		 		if ( !defined('WPLANG') || $this->default_lang == 'en_US' || $this->default_lang == '' ) {
-		 			$term = 'fr_FR'; $desc = 'french'; $slug = 'fr_fr' ;
-		 		}
-		 		$args = array( 'alias_of' => '', 'description' => $desc, 'parent' => 0, 'slug' => $slug);
+				$slug = strtolower( $this->default_lang ) ; // 2.3.1
+				$wp_lang = $this->get_WPLANG();
+				if ( $wp_lang == '' || $this->default_lang == 'en_US' || $this->default_lang == '' ) {
+					$term = 'fr_FR'; $desc = 'french'; $slug = 'fr_fr' ;
+				}
+				$args = array( 'alias_of' => '', 'description' => $desc, 'parent' => 0, 'slug' => $slug);
 
-		 		$theids = $this->safe_lang_term_creation ( $term, $args ) ;
-				if ( ! is_wp_error($theids) ) {
-					wp_set_object_terms($theids['term_id'], 'the-langs-group', TAXOLANGSGROUP);
+				$term_data = $this->safe_lang_term_creation ( $term, $args ) ;
+				if ( ! is_wp_error( $term_data ) ) {
+					wp_set_object_terms( $term_data['term_id'], 'the-langs-group', TAXOLANGSGROUP);
 					$this->xili_settings['lang_features'][$slug] = array('charset'=>"",'hidden'=>"");
-
-		 		}
+				} else {
+					$inserted = $this->safe_insert_in_language_group ( $term_data, 0 );
+				}
 
 				update_option( 'xili_language_settings', $this->xili_settings );
 
@@ -760,6 +854,11 @@ class xili_language {
 
 		$this->langs_group_id = $thegroup[0]->term_id;
 		$this->langs_group_tt_id = $thegroup[0]->term_taxonomy_id;
+		if ( $this->langs_group_id > 0 ) {
+			$this->xili_settings['langs_group_id'] = $this->langs_group_id;
+			$this->xili_settings['langs_group_tt_id'] = $this->langs_group_tt_id;
+			update_option( 'xili_language_settings', $this->xili_settings ); // 2.15.1
+		}
 
 		if ( is_child_theme() ) { // 1.8.1 - 1.8.5
 			if ( $this->xili_settings['langs_in_root_theme'] == 'root' ) {
@@ -798,28 +897,48 @@ class xili_language {
 	 *
 	 * @since 2.4.1
 	 */
-	 function safe_lang_term_creation ( $term, $args ) {
-	 	global $wpdb ;
+	function safe_lang_term_creation ( $term, $args ) {
+		global $wpdb ;
 		// test if exists with other slug or name
-		if ( $term_id = term_exists( $term ) ) {
+		if ( $term_id = term_exists( $term ) ) { // return id (no taxonomy)
 			$existing_term = $wpdb->get_row( $wpdb->prepare( "SELECT name, slug FROM $wpdb->terms WHERE term_id = %d", $term_id), ARRAY_A );
-			if ( $existing_term['slug'] != $args['slug'] ) {
-				$res = wp_insert_term( $term.'xl', TAXONAME, $args); // temp insert with temp other name
+			if ( $existing_term['slug'] != $args['slug'] ) { // same name but not same slug
+				$res = wp_insert_term( $term.'xl', TAXONAME, $args); // temp insert with temp other name but same slug
 				$args['name'] = $term ;
-				$res = wp_update_term( $res['term_id'], TAXONAME, $args);
+				$res = wp_update_term( $res['term_id'], TAXONAME, $args); // to recover same name
 			} else {
 				return new WP_Error('term_exists', __('A term with the name provided already exists.'), $term_id );
 			}
 		} else {
 			$res = wp_insert_term( $term, TAXONAME, $args);
 		}
-		if (is_wp_error($res)) {
+		if ( is_wp_error($res) ) {
 			return $res ;
 		} else {
 			$theids = $res;
 		}
 		return $theids ;
-	 }
+	}
+
+	/**
+	 * Safe language term insertion in group following error due to existing term
+	 *
+	 * @since 2.12.2
+	 */
+	function safe_insert_in_language_group ( $term_data, $language_order = 0 ) {
+
+		if ( $id_exists = $term_data->error_data['term_exists'] ) { // id of existing term
+			$term_id = term_exists( $id_exists, TAXOLANGSGROUP ) ;
+			if ( is_array( $term_id ) ) { // yet in group because array
+					return false; 
+			} else {
+				wp_set_object_terms( $id_exists, 'the-langs-group', TAXOLANGSGROUP);
+				if ( $language_order ) update_term_order ( $id_exists, $this->langs_group_tt_id, $language_order ); 
+				return true;
+			}
+		}
+		return false;	
+	}
 
 	/**
 	 * Get list language Objects - designed and used to avoid query by using settings
@@ -829,17 +948,22 @@ class xili_language {
 	 * @return array of objects
 	 */
 	function get_listlanguages( $force = false ) {
-		if ( $this->xili_settings['langs_list_status'] != "set" || $force === true ) {
-	 		$listlanguages = get_terms_of_groups_lite ( $this->langs_group_id, TAXOLANGSGROUP,TAXONAME, 'ASC' );
-	 		if ( $listlanguages ) {
-	 			$this->xili_settings['languages_list'] = $listlanguages;
-	 			$do = ( $this->xili_settings['langs_list_status'] != "set" ) ? true : $this->xili_settings['languages_list'] != $listlanguages ;
-	 			$this->xili_settings['langs_list_status'] = "set";
-	 			if ( is_admin() && $do && false !== $this->class_admin && $this->xili_settings['languages_list'] != $listlanguages )  {
-	 				update_option('xili_language_settings', $this->xili_settings);
-	 			}
-	 		}
-	 		return $listlanguages;
+		if ( $force === true || in_array ( $this->xili_settings['langs_list_status'], array('added', 'edited', 'deleted') ) ) {
+			if ( $this->xili_settings['langs_group_id'] > 0 ) { // 2.15.1
+				$listlanguages = get_terms_of_groups_lite ( $this->xili_settings['langs_group_id'], TAXOLANGSGROUP, TAXONAME, 'ASC' );
+				if ( $listlanguages ) {
+					$prev_listlanguages = $this->xili_settings['languages_list'];
+					$this->xili_settings['languages_list'] = $listlanguages;
+					$do = ( $this->xili_settings['langs_list_status'] != "set" ) ? true : $prev_listlanguages != $listlanguages ; // 2.15.1
+					$this->xili_settings['langs_list_status'] = "set";
+					if ( is_admin() && $do && false !== $this->class_admin ) {
+						update_option('xili_language_settings', $this->xili_settings);
+					}
+				}
+				return $listlanguages;
+			} else {
+				return array();
+			}
 		} else {
 			return $this->xili_settings['languages_list'];
 		}
@@ -866,7 +990,7 @@ class xili_language {
 	 * @since 2.1.1
 	 */
 	function get_lang_slug_ids( $flush = 'null') {
-		$this->alias_mode = ( has_filter ( 'alias_rule', 'xili_language_trans_slug_qv' ) ) ? true : false  ;
+		$this->alias_mode = ( has_filter ( 'alias_rule', 'xili_language_trans_slug_qv' ) ) ? true : false ;
 		$lang_slugs = array() ;
 		$lang_names = array() ;
 		$lang_full_names = array() ;
@@ -882,7 +1006,7 @@ class xili_language {
 
 
 			if ( $this->alias_mode ) {
-				$short = ( isset ( $this->xili_settings['lang_features'][$key]['alias'] ) ) ?  $this->xili_settings['lang_features'][$key]['alias'] : $key ;
+				$short = ( isset ( $this->xili_settings['lang_features'][$key]['alias'] ) ) ? $this->xili_settings['lang_features'][$key]['alias'] : $key ;
 				$langs_slug_shortqv[$key] = $short;
 				if ( '' != $short ) {
 					$langs_shortqv_slug[$short] = $key;
@@ -906,7 +1030,7 @@ class xili_language {
 			$this->langs_slug_shortqv_array = $langs_slug_shortqv;
 			$this->langs_shortqv_slug_array = $langs_shortqv_slug;
 			$do = ( $this->xili_settings['shortqv_slug_array'] != $langs_shortqv_slug ) ? true : false ;
-			$this->xili_settings['shortqv_slug_array'] = $langs_shortqv_slug;  // used by permalinks
+			$this->xili_settings['shortqv_slug_array'] = $langs_shortqv_slug;	// used by permalinks
 
 		} else {
 			$this->langs_slug_shortqv_array = array ();
@@ -917,7 +1041,7 @@ class xili_language {
 			update_option( 'xili_language_settings', $this->xili_settings );
 		}
 		// 2.9.21 - 22
-		if ( $flush == 'edited' &&  $this->is_permalink ) flush_rewrite_rules( false );
+		if ( $flush == 'edited' && $this->is_permalink ) flush_rewrite_rules( false );
 	}
 
 	/**
@@ -929,7 +1053,7 @@ class xili_language {
 	function lang_qv_slug_trans ( $lang_qv ){
 		if ( count ( $langs = explode ( ',', $lang_qv ) ) > 1 ) $lang_qv = $langs[0]; // if multilanguage query: keep first 2.8.8
 
-		$lang_qv = wp_kses( $lang_qv, array() ); // fixes security xss  - 2.8.6
+		$lang_qv = wp_kses( $lang_qv, array() ); // fixes security xss - 2.8.6
 		$lang_qv = preg_replace( '/[^a-z0-9_\-]/', '', $lang_qv );
 		if ( isset( $this->langs_shortqv_slug_array[$lang_qv]) ) {
 			return $this->langs_shortqv_slug_array[$lang_qv];
@@ -1005,7 +1129,7 @@ class xili_language {
 			$this->page_for_posts_name_array = $front_pages_for_posts_name_array;
 		}
 
-		 // debug temp
+		// debug temp
 		$do = ( !isset ( $this->xili_settings['show_page_on_front_array'] ) || $this->xili_settings['show_page_on_front_array'] != $front_pages_array ) ? true : false ;
 
 		$this->xili_settings['show_page_on_front_array'] = $front_pages_array;
@@ -1054,7 +1178,7 @@ class xili_language {
 
 		$params = array('post_status' => 'draft', 'post_type' => $post_type, 'post_author' => $user_ID,
 			'ping_status' => get_option('default_ping_status'), 'post_parent' => 0,
-			'menu_order' => 0, 'to_ping' =>  '', 'pinged' => '', 'post_password' => '',
+			'menu_order' => 0, 'to_ping' => '', 'pinged' => '', 'post_password' => '',
 			'guid' => '', 'post_content_filtered' => '', 'post_excerpt' => '', 'import_id' => 0,
 			'post_content' => $target_post_title, 'post_title' => $target_post_title);
 
@@ -1079,14 +1203,9 @@ class xili_language {
 			}
 			// this
 			update_post_meta( $post_ID, QUETAG.'-'.$frompostlang, $from_post_ID );
-			update_post_meta( $post_ID, $this->translation_state, "initial" ); // to update further slug - post_name
+			update_post_meta( $post_ID, $this->translation_state, "initial " . $frompostlang ); // to update further slug - post_name
 
-			// categories of from_post
-			// $this->propagate_categories ( $from_post_ID, $post_ID );
-			// in action
-
-
-			do_action ( 'xl_propagate_post_attributes', $from_post_ID, $post_ID ); // to personalize features
+			do_action ( 'xl_propagate_post_attributes', $from_post_ID, $post_ID ); // to personalize features - see class theme-multilingual-classes
 
 			return $post_ID;
 		}
@@ -1117,6 +1236,95 @@ class xili_language {
 		}
 	}
 
+	// propagates added with 2.12
+
+	/**
+	 * propagate post_formats
+	 *
+	 * @since 2.12
+	 *
+	 * by default copy from original to created post - customization with filter xiliml_propagate_post_format
+	 *
+	 */
+	function propagate_post_format ( $from_post_ID, $post_ID ) {
+		if ( $format = get_post_format( $from_post_ID ) ){
+			set_post_format( (int)$post_ID , apply_filters ( 'xiliml_propagate_post_format', $format) );
+		}
+	}
+
+	/**
+	 * propagate page_template
+	 *
+	 * @since 2.12
+	 *
+	 * by default copy from original to created post - customization with filter xiliml_propagate_page_template
+	 *
+	 */
+	function propagate_page_template ( $from_post_ID, $post_ID ) {
+		if ( 'page' == get_post_type( $from_post_ID ) ) { // post_type_supports( 'page', 'page-attributes' );
+			$template = get_post_meta ( $from_post_ID, '_wp_page_template', true ) ;
+			update_post_meta ( $post_ID, '_wp_page_template', apply_filters ( 'xiliml_propagate_page_template', $template ) );
+		}
+	}
+
+	/**
+	 * propagate comment_status ping_status menu_order post_parent in oneshot
+	 *
+	 * @since 2.12
+	 *
+	 * by default copy from original to created post - customization with filter xiliml_propagate_post_columns (need key of column)
+	 *
+	 */
+	function propagate_post_columns ( $from_post_ID, $post_ID ) {
+
+		// list columns to update
+		$options = $this->get_theme_author_rules_options(); // in admin extension
+
+		$from_post = get_post( $from_post_ID, ARRAY_A);
+		$from_lang = get_cur_language( $from_post_ID ) ;
+
+		$to_post = array ( 'ID' => $post_ID );
+		$to_lang = get_cur_language( $post_ID ) ;
+
+		if ( $this->propagate_options_default != array() ) { // in admin extension
+			$i = 0;
+			foreach ( $this->propagate_options_default as $key => $one_propagate ) {
+				if ( $one_propagate['data'] == 'post' && isset ( $options[$key] ) ) {
+
+					if ( $key == 'post_parent' ) {
+						$parent_key = $from_post[$key];
+
+						$translated_parent_key = xl_get_linked_post_in ( $parent_key, $to_lang ) ; // return ID
+						$to_post[$key] = $translated_parent_key ;
+
+					} else {
+						$to_post[$key] = apply_filters ( 'xiliml_propagate_post_columns', $from_post[$key], $key, $from_lang, $to_lang ); // ready also for excerpt...
+					}
+
+					$i++;
+				}
+			}
+
+			if ( $i > 0 ) wp_update_post( $to_post ) ;
+		}
+	}
+
+	/**
+	 * featured image
+	 *
+	 * @since 2.12
+	 */
+	function propagate_thumbnail_id ( $from_post_ID, $post_ID ) {
+		$thumbnail_id = get_post_meta ( $from_post_ID, '_thumbnail_id', true ) ;
+
+		if ( $thumbnail_id ) {
+			$to_lang = get_cur_language( $post_ID ) ;
+			$translated_value = xl_get_linked_post_in ( $thumbnail_id, $to_lang ) ;
+			$value = ( $translated_value != 0 ) ? $translated_value : $thumbnail_id ; // a translation exist ( title / alt / ...)
+			update_post_meta ( $post_ID, '_thumbnail_id', $value );
+		}
+	}
+
 	/**
 	 * return post object
 	 *
@@ -1137,8 +1345,10 @@ class xili_language {
 	 *
 	 * @since 2.5
 	 *
+	 * @updated 2.13.2b
+	 *
 	 */
-	function authorized_custom_post_type () {
+	function authorized_custom_post_type ( $fully = false ) {
 
 		$custompoststype = $this->xili_settings['multilingual_custom_post'] ;
 		$custom = get_post_type_object ('post');
@@ -1147,7 +1357,41 @@ class xili_language {
 		$custom = get_post_type_object ('page');
 		$clabels = $custom->labels;
 		$custompoststype['page'] = array( 'name' => $custom->label, 'singular_name' => $clabels->singular_name , 'multilingual' => 'enable');
-		return $custompoststype;
+		if ( $fully ) {
+			$custompoststype_enabled = array ();
+			foreach ( $custompoststype as $post_type => $one ) {
+				if ( post_type_exists( $post_type ) && $one['multilingual'] == 'enable' ) $custompoststype_enabled[$post_type] = $one;
+			}
+			return $custompoststype_enabled;
+		} else {
+			return $custompoststype;
+		}
+	}
+
+	/**
+	 * return array of authorized taxonomies (for link template of language list)
+	 *
+	 * @since 2.13.3
+	 *
+	 */
+	function authorized_custom_taxonomies ( $post_type_array, $public = true ){
+		$authorized_custom_taxonomies = array(); // to merge
+		if ( is_array($post_type_array) && array() != $post_type_array ) {
+			foreach ( $post_type_array as $post_type ) {
+				$taxonomies = get_object_taxonomies( $post_type, 'objects' );
+				if ( $public ) {
+					$public_cpt_taxonomies = array();
+					foreach ( $taxonomies as $taxonomy => $one_t) {
+						if ( $one_t->public ) $public_cpt_taxonomies[] = $taxonomy;
+					}
+					$authorized_custom_taxonomies = array_merge ( $authorized_custom_taxonomies, $public_cpt_taxonomies );
+				} else {
+					$authorized_custom_taxonomies = array_merge ( $authorized_custom_taxonomies, array_keys( $taxonomies ) ); // public and none public
+				}
+			}
+			$authorized_custom_taxonomies = array_diff ( $authorized_custom_taxonomies, array( 'category', 'post_tag', 'post_format', TAXONAME )); // exclude buit-in
+		}
+		return $authorized_custom_taxonomies;
 	}
 
 	/**
@@ -1184,12 +1428,12 @@ class xili_language {
 	 *
 	 * @since 2.4.0
 	 */
-	function change_locale_stylesheet_uri ( $stylesheet_uri,  $stylesheet_dir_uri ) {
+	function change_locale_stylesheet_uri ( $stylesheet_uri, $stylesheet_dir_uri ) {
 		$rtlarray = explode ('-', $this->rtllanglist);
 		$dir = ( in_array( substr( strtolower( $this->curlang ), 0, 2 ), $rtlarray ) ) ? 'rtl' : 'ltr';
 		$dircss = get_stylesheet_directory();
 		// avoid with locale.css
-		if ( $stylesheet_uri == '' || false !== strpos($stylesheet_uri, 'rtl.css'  ) || false !== strpos($stylesheet_uri, 'ltr.css'  ) ) {
+		if ( $stylesheet_uri == '' || false !== strpos($stylesheet_uri, 'rtl.css' ) || false !== strpos($stylesheet_uri, 'ltr.css' ) ) {
 			if ( in_array ( substr( $this->curlang, 0, 2 ) , $rtlarray ) ) {
 
 				if ( file_exists("$dircss/{$dir}.css") ) {
@@ -1225,10 +1469,10 @@ class xili_language {
 				$postlangdir = $this->get_dir_of_cur_language($postlang);
 				return array( QUETAG => $postlang, 'direction' => $postlangdir);
 			}
-	 	} else {
-	 		$this->langstate = false; /* can be used in language attributes for header */
-	  		return false;	/* undefined state */
-	 	}
+		} else {
+			$this->langstate = false; /* can be used in language attributes for header */
+			return false;	/* undefined state */
+		}
 	}
 
 	/** enable the new query tag associated with new taxonomy */
@@ -1252,79 +1496,50 @@ class xili_language {
 	 * @updated 1.7.0 modify page on front and home query
 	 * @updated 1.8.4 * to select posts with undefined lang
 	 * @updated 2.2.3 LANG_UNDEF = . and no * xili_xl_
+	 * @updated 2.12 multiple post_type - fired by where query filter and $ready_to_join_filter (if where needs join)
 	 *
 	 */
 	function posts_join_with_lang( $join, $query_object = null ) {
 		global $wpdb, $wp_query;
-		xili_xl_error_log ( '======= 1268 =======' . serialize($query_object->query_vars));
+
+		xili_xl_error_log ( '# '. __LINE__ .' ===== ready_to_join_filter =========' . serialize($this->ready_to_join_filter));
+		xili_xl_error_log ( '# '. __LINE__ .' ===== posts_join_with_lang =========' . serialize($query_object->query_vars));
+
 		$insert_join = false ;
 		if ( isset ( $query_object->query_vars[QUETAG] ) && '' != $query_object->query_vars[QUETAG] ) {
 
-			if ( ( isset ( $query_object->query_vars['caller_get_posts'] ) && $query_object->query_vars['caller_get_posts']) || ( isset ( $query_object->query_vars['ignore_sticky_posts'] ) && $query_object->query_vars['ignore_sticky_posts']) ) {
-				$insert_join = false ;
-			} else {
+				$insert_join = $this->ready_to_join_filter;
 
-				if ( !($query_object->is_home && $this->show_page_on_front )) { // join if no front-page and other page
-					if ( empty( $query_object->query_vars['post_type'] ) )  { // string or array
-						$a = $query_object->query_vars['page_id'];
-						$b = get_option('page_on_front');
-						if ( $a == $b && $a !='' ) {
-							$insert_join = false;
-						} else {
-							$insert_join = true; // as in cat or home+lang
-						}
-					} else { //  test only post_type
-						if ( is_admin () || in_array ( $query_object->query_vars['post_type'], array_keys ($this->authorized_custom_post_type () ) ) )
-							$insert_join = true;
-					}
-
-				} elseif ( $query_object->is_home && !$this->show_page_on_front ) { // home and lang
-					$insert_join = true ;
-				} else {
-					$insert_join = true ;
-				}
-				if ( isset( $query_object->query_vars['post_format'] )  ) {
-					$insert_join = true ;
+				if ( isset( $query_object->query_vars['post_format'] ) ) {
 					if ( false === strpos( $join, 'wp_term_relationships ON' ))
 						$join .= " INNER JOIN wp_term_relationships ON ( wp_posts.ID = wp_term_relationships.object_id ) ";
 				}
 
-				xili_xl_error_log ('before lang_perma (insert_join) *** #1301 *** ' . serialize($insert_join));
+				xili_xl_error_log ('# '. __LINE__ .' before lang_perma (insert_join) ****** ' . serialize($insert_join));
 
 				$this->xili_test_lang_perma ();
-				if ( $this->lang_perma  ){ // basic post
-					if ( empty($query_object->query_vars['post_type']) && $query_object->query_vars['category_name'] == ""  && isset( $query_object->query_vars[QUETAG])  && $this->show_page_on_front && !is_admin()) {
+				if ( $this->lang_perma ){ // basic post
+					if ( empty($query_object->query_vars['post_type']) && $query_object->query_vars['category_name'] == "" && isset( $query_object->query_vars[QUETAG]) && $this->show_page_on_front && !is_admin()) {
 						$join = ''; // page linked on front page
-						$insert_join = false ;
+
+						xili_xl_error_log ('# '. __LINE__ .' front-page ****** ');
 						unset($wp_query->queried_object); // to avoid notice in get_page_template and force get_queried_object -2.3.2
 					}
-					xili_xl_error_log ('lang_perma (insert_join) *** #1310 *** ' . serialize($insert_join));
-
-					if ( $query_object->is_tax && $query_object->query_vars['category_name'] != '' ) $insert_join = true ;
-					if ( $query_object->is_search &&  $query_object->query_vars['s'] != '' ) $insert_join = true ; // 2.8.7
-					if ( $query_object->is_date ) $insert_join = true ;
-
 				}
-				xili_xl_error_log ('lang_perma (insert_join) *** #1317 *** ' . serialize($insert_join));
-			}
+				xili_xl_error_log ('# '. __LINE__ .' lang_perma (insert_join) ****** ' . serialize($insert_join));
+			//}
 
 		} else { // join if home and modify home according rule ignore_sticky_posts
 
 			if ( ''== $this->sublang ) {
-
-				if ( ( isset ( $query_object->query_vars['caller_get_posts'] ) && $query_object->query_vars['caller_get_posts']) || ( isset ( $query_object->query_vars['ignore_sticky_posts'] ) && $query_object->query_vars['ignore_sticky_posts']) ) {
-
-				} else {
-					if ( ( $query_object->is_home && $query_object->is_posts_page) && $this->xili_settings['pforp_select'] != 'no_select' || ( $query_object->is_home && $this->xili_settings['homelang'] == 'modify') || $query_object->query_vars['ignore_sticky_posts']) {
-
-						if ( '' == $query_object->query_vars['post_type'] || in_array ( $query_object->query_vars['post_type'], array_keys ($this->authorized_custom_post_type () ) ) )
-								$insert_join = true ; 											}
-				}
+				$insert_join = $this->ready_to_join_filter;
 			}
 		}
-xili_xl_error_log ('ici - join (#1326) = ' . serialize($insert_join) );
 
-		if ( $insert_join ) {
+		xili_xl_error_log ('# '. __LINE__ .' ici - join = ' . serialize($insert_join) );
+		xili_xl_error_log ('# '. __LINE__ .' ici - join ( post_type) = ' . serialize($query_object->query_vars['post_type']) );
+
+		if ( $insert_join || ( !$insert_join && $this->ready_to_join_filter ) ) { // ready_to_join_filter set in where filter 2.12 (before optimization - avoid sql error)
 			$join .= " LEFT JOIN $wpdb->term_relationships as xtr ON ($wpdb->posts.ID = xtr.object_id) LEFT JOIN $wpdb->term_taxonomy as xtt ON (xtr.term_taxonomy_id = xtt.term_taxonomy_id) ";
 		}
 		return $join;
@@ -1367,6 +1582,7 @@ xili_xl_error_log ('ici - join (#1326) = ' . serialize($insert_join) );
 	 * @updated 0.9.4 (OR added) lang=xx_xx,yy_yy,..
 	 * @updated 1.7.0 modify page on front and home query
 	 * @updated 2.2.3 LANG_UNDEF
+	 * @updated 2.12 multiple post_type
 	 *
 	 * @param object $where.
 	 * @return $where.
@@ -1375,24 +1591,25 @@ xili_xl_error_log ('ici - join (#1326) = ' . serialize($insert_join) );
 		global $wpdb, $wp_query;
 		$reqtags = array();
 		$thereqtags = array();
+		$need_join = false; // 2.12
+		xili_xl_error_log ( '# '. __LINE__ .' ****** where start ******'.$where );
+		if ( isset ( $query_object->query_vars[QUETAG] )) { xili_xl_error_log( '# '. __LINE__ .' where  = ' . $query_object->query_vars[QUETAG] );}
 
-		if ( isset ( $query_object->query_vars[QUETAG] )) xili_xl_error_log( 'where #1387 = ' . $query_object->query_vars[QUETAG] );
+		if ( "" != $this->sublang ) { // see above
 
-		if ( "" != $this->sublang )  { // see above
-
-		    $lang =  str_replace ( LANG_UNDEF, '' , $this->sublang ); //$query_object->query_vars[QUETAG] ) ;
-		    if ( "" == $lang ) {
+			$lang = str_replace ( LANG_UNDEF, '' , $this->sublang ); //$query_object->query_vars[QUETAG] ) ;
+			if ( "" == $lang ) {
 				$lang_string = implode( ", ", $this->xili_settings['available_langs'] );
-		    } else {
-		    	$id = ( isset ( $this->langs_ids_array[ $lang ] ) ) ? $this->langs_ids_array[ $lang ] : 0 ;
-		    	if ( $id > 0 ) {
-		    		$remain = array_diff( $this->xili_settings['available_langs'], array($id));
-		    		$lang_string = implode( ", ", $remain  );
-		    	} else {
-		    		$lang_string = implode( ", ", $this->xili_settings['available_langs'] );
-		    	}
-		    }
-
+			} else {
+				$id = ( isset ( $this->langs_ids_array[ $lang ] ) ) ? $this->langs_ids_array[ $lang ] : 0 ;
+				if ( $id > 0 ) {
+					$remain = array_diff( $this->xili_settings['available_langs'], array($id));
+					$lang_string = implode( ", ", $remain );
+				} else {
+					$lang_string = implode( ", ", $this->xili_settings['available_langs'] );
+				}
+			}
+			$need_join = true;
 			$where .= " AND $wpdb->posts.ID NOT IN ( SELECT xtr.object_id FROM $wpdb->term_relationships AS xtr INNER JOIN $wpdb->term_taxonomy AS xtt ON xtr.term_taxonomy_id = xtt.term_taxonomy_id WHERE xtt.taxonomy = '".TAXONAME."' AND xtt.term_id IN ($lang_string) )";
 
 		} elseif ( isset ($query_object->query_vars[QUETAG]) && '' != $query_object->query_vars[QUETAG] ) {
@@ -1409,24 +1626,24 @@ xili_xl_error_log ('ici - join (#1326) = ' . serialize($insert_join) );
 
 						$do_it = true;
 					}
-					if ( $query_object->is_tax &&  $query_object->query_vars['taxonomy'] == 'category' ) {
+					if ( $query_object->is_tax && $query_object->query_vars['taxonomy'] == 'category' ) {
 						$do_it = true;
 					}
-					if ( $query_object->is_tax &&  $query_object->query_vars['taxonomy'] == TAXONAME && "" == $query_object->query_vars['category_name'] ) {
+					if ( $query_object->is_tax && $query_object->query_vars['taxonomy'] == TAXONAME && "" == $query_object->query_vars['category_name'] ) {
 						$do_it = false;
 						if ( !$query_object->is_page ) {
 							$where .= " AND $wpdb->posts.post_type = 'post'";
 						}
 					}
 				} else {
-				    if ( !( $query_object->is_home && $this->show_page_on_front ) ) {
+					if ( !( $query_object->is_home && $this->show_page_on_front ) ) {
 						$do_it = true; // all but not home
 					}
 				}
 			}
+			xili_xl_error_log ('# '. __LINE__ .' ici - doit where  = ' . serialize($do_it) );
 
-xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
-			if ($do_it) { // insertion of selection
+			if ( $do_it ) { // insertion of selection
 
 				if ( strpos($query_object->query_vars[QUETAG], ',') !== false ) {
 					$langs = preg_split('/[,\s]+/', $query_object->query_vars[QUETAG]);
@@ -1437,6 +1654,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					foreach ($reqtags as $reqtag){
 						$thereqtagids[] = $this->langs_ids_array[$reqtag];
 					}
+					$need_join = true;
 					$wherereqtag = implode(", ", $thereqtagids);
 					$where .= " AND xtt.taxonomy = '".TAXONAME."' ";
 					$where .= " AND xtt.term_id IN ( $wherereqtag )";
@@ -1446,17 +1664,18 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					$reqtag = $query_object->query_vars[QUETAG];
 					$wherereqtag = $this->langs_ids_array[ $this->lang_qv_slug_trans($reqtag) ];
 
-					if ( ! isset( $query_object->query_vars['post_format'] )  ) {
+					if ( ! isset( $query_object->query_vars['post_format'] ) ) {
 						/* only one lang */
-						xili_xl_error_log ( $query_object->query_vars['page_id'] . ' <-----+++**** 1449 where blog page_for_posts ' .  $query_object->query_vars[QUETAG] . '-' . get_option('page_on_front'));
-
+						xili_xl_error_log ( '# '. __LINE__ .' '. $query_object->query_vars['page_id'] . ' <-----+++****where blog page_for_posts ' . $query_object->query_vars[QUETAG] . '-' . get_option('page_on_front'));
+						$need_join = true;
 						$where .= " AND xtt.taxonomy = '".TAXONAME."' ";
 						$where .= " AND xtt.term_id = $wherereqtag ";
 					} else {
+						$need_join = true;
 						$where .= " AND xtt.taxonomy = '".TAXONAME."' ";
 						$where .= " AND xtt.term_id = $wherereqtag ";
 					}
-				 }
+				}
 
 			} else { // is_home and page
 
@@ -1469,12 +1688,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 
 					$where = str_replace ("'post'","'page'",$where); // post_type =
 					$where .= " AND 3=3 AND {$wpdb->posts}.ID = " . $query_object->query_vars['page_id'];
-					xili_xl_error_log ( $query_object->query_vars['page_id'] . ' <-----+++**** 1471 where home ' .  $query_object->query_vars[QUETAG] . '-' . get_option('page_on_front'));
+					xili_xl_error_log ( '# '. __LINE__ .' '.$query_object->query_vars['page_id'] . ' <-----+++**** where home ' . $query_object->query_vars[QUETAG] . '-' . get_option('page_on_front'));
 				}
 
 				if ( $this->lang_perma && $this->show_page_on_front) { // 2.1.1
 
-					if ( $query_object->query_vars[QUETAG] != "" && isset ( $query_object->query_vars['taxonomy'] ) && $query_object->query_vars['taxonomy'] == TAXONAME  ) {
+					if ( $query_object->query_vars[QUETAG] != "" && isset ( $query_object->query_vars['taxonomy'] ) && $query_object->query_vars['taxonomy'] == TAXONAME ) {
 
 						$query_object->is_page = true ;
 						$query_object->is_tax = false ;
@@ -1506,54 +1725,75 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 				}
 			}
 
-
 		} else { // no query tag
 
 			if ( ( isset ( $query_object->query_vars['caller_get_posts'] ) && $query_object->query_vars['caller_get_posts']) || ( isset ( $query_object->query_vars['ignore_sticky_posts'] ) && $query_object->query_vars['ignore_sticky_posts']) ) {
 				// nothing
 			} else {
-				if (  ($query_object->is_home && !$this->show_page_on_front && $this->xili_settings['homelang'] == 'modify') || ($query_object->is_home && $query_object->is_posts_page && $this->xili_settings['pforp_select'] != 'no_select' ) )  {
+				if ( ($query_object->is_home && !$this->show_page_on_front && $this->xili_settings['homelang'] == 'modify') || ($query_object->is_home && $query_object->is_posts_page && $this->xili_settings['pforp_select'] != 'no_select' ) ) {
 
-						// force change if loop - home or page_for_posts
-						if ( $query_object->is_posts_page ) { // 2.8.4
+					// force change if loop - home or page_for_posts
+					if ( $query_object->is_posts_page ) { // 2.8.4
 
-							if ( $this->is_permalink ) { // 2.8.4.1
-								xili_xl_error_log ( "****** ici 1520 force change ******" . serialize ( $query_object->query_vars['pagename']) );
-								$pagenametolang = array_flip ( $this->page_for_posts_name_array ) ;
-								if ( isset ( $query_object->query_vars['pagename'] ) && isset ( $pagenametolang[$query_object->query_vars['pagename']] ) ) {
-									$curlang = $pagenametolang[$query_object->query_vars['pagename']];
-									xili_xl_error_log ( '"****** ici 1565 Name + ' . $curlang );
-								} else {
-
-									$curlang = $this->choice_of_browsing_language();
-
-								}
-
-							} else {
-								xili_xl_error_log ( '****** ici 1532 force change ****** ' . serialize ( $query_object->query_vars['page_id']) );
-								$pageidtolang = array_flip ( $this->page_for_posts_array ) ;
-								if ( isset ( $query_object->query_vars['page_id'] ) && isset ( $pageidtolang[$query_object->query_vars['page_id']] ) ) {
-									$curlang = $pageidtolang[$query_object->query_vars['page_id']];
-									xili_xl_error_log ( 'ID + ' . $curlang );
-								} else {
-
-									$curlang = $this->choice_of_browsing_language();
-
+						if ( $this->is_permalink ) { // 2.8.4.1
+							xili_xl_error_log ( '# '. __LINE__ .' ****** ici force change ******' . serialize ( $query_object->query_vars['pagename']) );
+							// $pagenametolang = array_flip ( $this->page_for_posts_name_array ) ;
+							// now test values before becoming index - 2.15.4
+							$pagenametolang = array();
+							foreach ( $this->page_for_posts_name_array as $key => $value ) {
+								if ( $value && is_string( $value )) {
+									$pagenametolang[$value] = $key;
 								}
 							}
+							if ( isset ( $query_object->query_vars['pagename'] ) && isset ( $pagenametolang[$query_object->query_vars['pagename']] ) ) {
+								$curlang = $pagenametolang[$query_object->query_vars['pagename']];
+								xili_xl_error_log ( '# '. __LINE__ .' ****** ici pageName + ' . $curlang );
+							} else {
+
+								$curlang = $this->choice_of_browsing_language();
+
+							}
+
 						} else {
-							$curlang = $this->choice_of_browsing_language();
+							xili_xl_error_log ( '# '. __LINE__ .' ****** ici force change ****** ' . serialize ( $query_object->query_vars['page_id']) );
+
+							$pageidtolang = array_flip ( $this->page_for_posts_array ) ;
+
+							if ( isset ( $query_object->query_vars['page_id'] ) && isset ( $pageidtolang[$query_object->query_vars['page_id']] ) ) {
+								$curlang = $pageidtolang[$query_object->query_vars['page_id']];
+								xili_xl_error_log ( '# '. __LINE__ .' ID + ' . $curlang );
+							} else {
+
+								$curlang = $this->choice_of_browsing_language();
+
+							}
 						}
-						// 2.9.2
-						if ( '' == $query_object->query_vars['post_type'] || in_array ( $query_object->query_vars['post_type'], array_keys ($this->authorized_custom_post_type () ) ) ) {
-							$wherereqtag = $this->langs_ids_array[$curlang];
-							$where .= " AND xtt.taxonomy = '" . TAXONAME . "' "; //"
-							$where .= " AND xtt.term_id = $wherereqtag ";
-						}
+					} else {
+						$curlang = $this->choice_of_browsing_language();
+					}
+xili_xl_error_log ( '# '. __LINE__ .' ****** query_vars post_type ***'. serialize( $query_object->query_vars['post_type'] ));
+					// 2.12 - // thanks to muh if multiple post_types
+					if ( empty( $query_object->query_vars['post_type'] ) ) { // string or array
+						$insertWhere = true;
+					} else if ( is_string($query_object->query_vars['post_type']) && in_array ( $query_object->query_vars['post_type'], array_keys ( $this->authorized_custom_post_type ( true ) ) ) ){
+						$insertWhere = true;
+					} else if (is_array($query_object->query_vars['post_type']) && !count(array_diff($query_object->query_vars['post_type'], array_keys( $this->authorized_custom_post_type( true ) ) ) ) ){
+						$insertWhere = true;
+					} else {
+						$insertWhere = false;
+					}
+					if ( $insertWhere ){
+						$query_object->query_vars[QUETAG] = $curlang; // in query.php posts_join filter is called after posts_where filter - for home page without lang_quetag
+						$need_join = true;
+						$wherereqtag = $this->langs_ids_array[$curlang];
+						$where .= " AND xtt.taxonomy = '" . TAXONAME . "' "; //"
+						$where .= " AND xtt.term_id = $wherereqtag ";
+					}
 				}
 			}
 		}
-		xili_xl_error_log ( "****** where *** (#1565) ***".$where );
+		xili_xl_error_log ( '# '. __LINE__ .' ****** where *** ***'.$where );
+		$this->ready_to_join_filter = $need_join; // 2.12
 		return $where;
 	}
 
@@ -1588,7 +1828,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	}
 
 	/**
-	 * wp action to switch wp_locale only on front-end
+	 * wp action to switch wp_locale class only on front-end
 	 *
 	 * @since 2.4.0
 	 *
@@ -1611,9 +1851,9 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	function translate_date_format ( $format ) {
 		if ( $this->xili_settings['wp_locale'] == 'wp_locale' )
-	 	 	return __( $format , $this->thetextdomain );
-	 	else
-	 		return $format;
+			return __( $format , $this->thetextdomain );
+		else
+			return $format;
 	}
 
 	/**
@@ -1663,6 +1903,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * @since 1.5.0
 	 * @updated 1.8.1 - 1.8.5
 	 * @updated 2.8.3 (WP 3.5) limited to current theme
+	 * @updated 2.12
 	 *
 	 */
 	function xiliml_override_load ( $falseval, $domain, $mofile ) {
@@ -1672,54 +1913,54 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 				if ( !in_array( $domain , $this->arraydomains ) )
 					$this->arraydomains[] = $domain;
 			}
-		   	if (false === strpos ($mofile ,'wx_YZ.mo')) {//
-		   		return false;
-		   	} else {
-		   		if ( str_replace( get_stylesheet_directory(), '', $mofile ) == $mofile ) { // no effect
-		   			$this->get_template_directory = get_template_directory();
-		   			$this->xili_settings['langs_in_root_theme'] = 'root';
-		   		} else {
-		   			$this->get_template_directory = get_stylesheet_directory(); // a load is in child
-		   			$this->xili_settings['langs_in_root_theme'] = '';
+			if (false === strpos ($mofile ,'wx_YZ.mo')) {//
+				return false;
+			} else { // dummy locale to detect languages folder
+				if ( str_replace( get_stylesheet_directory(), '', $mofile ) == $mofile ) { // no effect
+					$this->get_template_directory = get_template_directory();
+					$this->xili_settings['langs_in_root_theme'] = 'root';
+				} else {
+					$this->get_template_directory = get_stylesheet_directory(); // a load is in child
+					$this->xili_settings['langs_in_root_theme'] = '';
 
-		   		}
-		   		$this->ltd = true ;
+				}
+				$this->ltd = true ;
 
-		   		$langs_folder = str_replace('/wx_YZ.mo','',str_replace( $this->get_template_directory, '', $mofile ));
-		   		// in wp3 the detection is only done here (end user side by theme domain) so updated is mandatory for xili-dico
+				$langs_folder = str_replace('/wx_YZ.mo','',str_replace( $this->get_template_directory, '', $mofile ));
+				// in wp3 the detection is only done here (end user side by theme domain) so updated is mandatory for xili-dico
 
-		   		if ( $this->xili_settings['langs_folder'] != $langs_folder ) {
-		   			$this->xili_settings['langs_folder'] = $langs_folder ;
-			 		update_option( 'xili_language_settings', $this->xili_settings );
-			 	}
-			 	// to restore theme mo if theme datas and terms in admin ui….
-			 	if ( is_admin() ) {
-			 		load_textdomain( $domain, str_replace('wx_YZ', get_locale(), $mofile )); // 2.3.1 - 18h18
-			 	}
+				if ( $this->xili_settings['langs_folder'] != $langs_folder ) {
+					$this->xili_settings['langs_folder'] = $langs_folder ;
+					update_option( 'xili_language_settings', $this->xili_settings );
+				}
+				// to restore theme mo if theme datas and terms in admin ui….
+				if ( is_admin() ) {
+					return load_textdomain( $domain, str_replace('wx_YZ', get_locale(), $mofile ));
+				}
 
-		   		return true;
+				return true; // to avoid dummy load
 
-		   	}
-		   	// impossible to use is_child_theme() - test even no $this->xili_settings['mo_parent_child_merging'] 2.9.30
+			}
+			// impossible to use is_child_theme()
 		} else if ( (get_template_directory() != get_stylesheet_directory() ) && false !== strpos ( $mofile , get_template_directory() ) ) {
 
-		   	if (false === strpos ($mofile ,'wx_YZ.mo')) {//
-		   		return false;
-		   	} else {
-		   		$parent_langs_folder = str_replace('/wx_YZ.mo','',str_replace( get_template_directory(), '', $mofile ));
-		   		$this->ltd_parent = true ;
-		   	}
-
-		   	if ( $this->xili_settings['parent_langs_folder'] != $parent_langs_folder ) {
-		   		$this->xili_settings['parent_langs_folder'] = $parent_langs_folder ;
-			 	update_option( 'xili_language_settings', $this->xili_settings );
+			if (false === strpos ($mofile ,'wx_YZ.mo')) {//
+				return false;
+			} else {
+				$parent_langs_folder = str_replace('/wx_YZ.mo','',str_replace( get_template_directory(), '', $mofile ));
+				$this->ltd_parent = true ;
 			}
-			 // to restore theme mo if theme datas and terms in admin ui….
+
+			if ( $this->xili_settings['parent_langs_folder'] != $parent_langs_folder ) {
+				$this->xili_settings['parent_langs_folder'] = $parent_langs_folder ;
+				update_option( 'xili_language_settings', $this->xili_settings );
+			}
+			// to restore theme mo if theme datas and terms in admin ui….
 			if ( is_admin() ) {
-			 	load_textdomain( $domain, str_replace('wx_YZ', get_locale(), $mofile )); // 2.3.1 - 18h18
+				return load_textdomain( $domain, str_replace('wx_YZ', get_locale(), $mofile ));
 			}
 
-		   	return true;
+			return true;
 
 		} else {
 			return false;
@@ -1731,10 +1972,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	function get_plugin_domain_array ( $locale, $domain ) {
 
-		if ( !isset ( $this->xili_settings['domains'][$domain] ) && ! in_array ( $domain, array ( 'xili-dictionary', 'xili-language', 'xili-language-widget' ) )  ) {
+		if ( in_array ( $domain, $this->unusable_domains) ) {
+			unset ( $this->xili_settings['domains'][$domain] );
+		} else if ( !isset ( $this->xili_settings['domains'][$domain] ) && ! in_array ( $domain, $this->unusable_domains ) ) {
 			$this->xili_settings['domains'][$domain] = 'disable';
 			if ( is_admin() )
-					update_option( 'xili_language_settings', $this->xili_settings );
+				update_option( 'xili_language_settings', $this->xili_settings );
 		}
 
 		return $locale;
@@ -1784,18 +2027,24 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * domain switching
 	 */
 	function switching_domain ( $domain ) {
-		$ok = false ;
+		$ok = 0 ;
 		if ( $domain != $this->thetextdomain ) {
 			if ( in_array ( $domain, array_keys( $this->xili_settings['domains'] ) ) ) {
 				if ( $this->xili_settings['domains'][$domain] == 'enable' ) {
-					$ok = true ;
-
+					$ok = 1 ;
+				} else if ( $this->xili_settings['domains'][$domain] == 'renamed' ) {
+					$ok = 2 ;
+				} else if ( $this->xili_settings['domains'][$domain] == 'filter' ) {
+					$ok = 3; // filter mode
 				}
 			} //else {
 				//if ( $this->xili_settings['domains']['all'] == 'enable' ) $ok = true ;
 			//}
-			if ( $ok )
+			if ( $ok == 1 ) {
 				$domain = $this->thetextdomain ;
+			} else if ( $ok == 2 ){
+				$domain = 'xilird_' . $domain ; // xili renamed domain
+			}
 		}
 
 		return $domain;
@@ -1806,7 +2055,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 *
 	 * @since 1.1.9
 	 *
-	 * call by locale hook
+	 * call by locale hook if locale_method filter
 	 */
 	function xiliml_setlocale ( $locale ) {
 		if ( $this->theme_locale === true ) {
@@ -1837,6 +2086,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * select .mo file
 	 * @since 0.9.0
 	 * @updated 0.9.7.1 - 1.1.9 - 1.5.2 wpmu - 1.8.9.1 (domain select) - 2.8.3 (WP 3.5)
+	 * @updated 2.13.1 - thanks to Edouard
 	 * call by function xiliml_language_wp()
 	 * @param $curlang .
 	 */
@@ -1859,39 +2109,40 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		}
 
 		if ( '' != $filename ) {
-			$filename .= '.mo';
+			$filename .= '.mo'; // xx_YY.mo
 
-			// if merging method with child theme set - 2.8.8
-
-			if ( $this->xili_settings['mo_parent_child_merging'] ) {
-
-				$mofile = $this->get_parent_theme_directory . $this->xili_settings['parent_langs_folder'] . "/$filename";
-				$parent_load = load_textdomain( $themetextdomain, $mofile );
-
-			}
-
-			$mofile = $this->get_template_directory . $langfolder . "/$filename";	 // only child subfolder
+			$mofile = $this->get_template_directory . $langfolder . "/$filename";	// only child or parent subfolder
+			$parent_mofile = ( is_child_theme() ) ? $this->get_parent_theme_directory . $this->xili_settings['parent_langs_folder'] . "/$filename" : '';
 
 			if ( is_multisite() ) { /* completes theme's language with db structure languages (cats, desc,…) */
 				if ( ( $uploads = wp_upload_dir() ) && false === $uploads['error'] ) {
 					$wpmu_curdir = $uploads['basedir']."/languages";
-					load_textdomain( $themetextdomain, $wpmu_curdir."/local-" . $this->langs_slug_name_array[$curlang] . ".mo" ); // here to be the last value
+					load_textdomain( $themetextdomain, $wpmu_curdir."/local-" . $this->langs_slug_name_array[$curlang] . ".mo" ); // here to be the last value (created by each instance)
 					load_textdomain( $themetextdomain, $wpmu_curdir."/$filename" );
 				}
 			}
-			load_textdomain( $themetextdomain, $this->get_template_directory .$langfolder."/local-" . $this->langs_slug_name_array[$curlang] . ".mo" ); // here to be the last value
 
-			if ( version_compare( $wp_version, '3.5', '<' ) ) {
+			// local has ever priority
+			// 2.12.1 - now able to search in WP_LANG_DIR/themes/
+			if ( ! ( $loaded = load_textdomain( $themetextdomain, $this->get_template_directory . $langfolder."/local-" . $filename ) ) ) { // here to be the last value
+				$local_mofile = WP_LANG_DIR . "/themes/{$themetextdomain}-local-{$filename}";
+				load_textdomain( $themetextdomain, $local_mofile );
+			}
 
-				load_textdomain( $themetextdomain, $mofile ); // moved here for merge (prior for site and not theme)
-
-			} else {
+			// if merging method with child theme set - 2.8.8
+			// parent mo downloaded with priority
+			if ( $parent_mofile && $this->xili_settings['mo_parent_child_merging'] == 'parent-priority' ) {
+				if ( !$parent_load = load_textdomain( $themetextdomain, $parent_mofile )) { // now same rules for parent file if not in parent theme dir // 2.16.0
+					$parent_mofile = WP_LANG_DIR . "/themes/{$themetextdomain}-{$filename}";
+					load_textdomain( $themetextdomain, $parent_mofile );
+				}
+			}
 
 			// **** new files place since WP 3.5 = wp-content/languages/ and domain-xx_YY.mo **** //
 			// I10n.php says : Load the textdomain from the Theme provided location, or theme directory first
 			// $mofile = "{$path}/{$locale}.mo";
 			// if ( $loaded = load_textdomain($domain, $mofile) )
-			// 		return $loaded;
+			//		return $loaded;
 
 			// Else, load textdomain from the Language directory
 			// $mofile = WP_LANG_DIR . "/themes/{$domain}-{$locale}.mo";
@@ -1899,15 +2150,55 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 
 			// XL will follow the same way - if not, will try in WP_LANG_DIR - 2.8.3
 
-				if ( ! ( $loaded = load_textdomain( $themetextdomain, $mofile ) ) ) {
-					$mofile = WP_LANG_DIR . "/themes/{$themetextdomain}-{$filename}";
-					load_textdomain( $themetextdomain, $mofile );
+			if ( ! ( $loaded = load_textdomain( $themetextdomain, $mofile ) ) ) {
+				$mofile = WP_LANG_DIR . "/themes/{$themetextdomain}-{$filename}";
+				load_textdomain( $themetextdomain, $mofile );
+			}
+			// parent mo downloaded without priority
+			if ( $parent_mofile && $this->xili_settings['mo_parent_child_merging'] == 'child-priority' ) {
+				if ( !$parent_load = load_textdomain( $themetextdomain, $parent_mofile ) ) { // now same rules for parent file if not in parent theme dir // 2.16.0
+					$parent_mofile = WP_LANG_DIR . "/themes/{$themetextdomain}-{$filename}";
+					load_textdomain( $themetextdomain, $parent_mofile );
 				}
 			}
 
-			// 2.8.1
-			do_action ( 'xiliml_add_frontend_mofiles' , $themetextdomain, $this->langs_slug_name_array[$curlang] ); // to add bbpress good mo
+			// 2.15.2
+			do_action ( 'load_plugin_domain_for_curlang_bbpress' , $themetextdomain, $this->langs_slug_name_array[$curlang] ); // to add bbpress good mo - need specific
+			do_action ( 'xiliml_add_frontend_mofiles' , $themetextdomain, $this->langs_slug_name_array[$curlang] );
 
+		}
+	}
+
+	/**
+	 * load additional .mo file according specific domains
+	 *
+	 * @since 2.14.0
+	 *
+	 */
+	function load_plugin_domain_for_curlang ( $themetextdomain, $iso_curlang ) {
+		$detected_domains = array_keys( $this->xili_settings['domains']);
+		foreach  ( $detected_domains as $plugin_domain ) {
+			if ( $this->xili_settings['domains'][$plugin_domain] == 'renamed') {
+
+				$mofile = $plugin_domain . '-' . $iso_curlang . '.mo';
+
+				unload_textdomain( $plugin_domain );
+
+				if ( isset ( $this->xili_settings['domain_paths'][$plugin_domain] )) {
+					$path = WP_PLUGIN_DIR . $this->xili_settings['plugin_paths'][$plugin_domain] . trim( $this->xili_settings['domain_paths'][$plugin_domain], '/' );
+					if ( $loaded = load_textdomain( 'xilird_'.$plugin_domain, $path . '/'. $mofile ) )
+						return;
+				}
+
+				$path = WP_PLUGIN_DIR . $this->xili_settings['plugin_paths'][$plugin_domain] . 'languages/' ;
+				if ( $loaded = load_textdomain( 'xilird_'.$plugin_domain, $path . '/'. $mofile ) )
+					return;
+
+				load_textdomain( 'xilird_'.$plugin_domain , WP_LANG_DIR . '/plugins/' . $mofile );
+
+			} else if ( $this->xili_settings['domains'][$plugin_domain] == 'filter')  {
+				do_action ('load_plugin_domain_for_curlang_'. str_replace('-', '_', $plugin_domain ) , $plugin_domain, $iso_curlang ) ;
+			}
 		}
 	}
 
@@ -1933,7 +2224,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			if ( 'page' == $showpage ) {
 				if (!in_array ( $wp_query->query_vars['page_id'], $this->xili_settings['show_page_on_front_array'] ) ) $condition = true;
 			} else {
-				if ( !is_home() ) 	$condition = true;
+				if ( !is_home() ) $condition = true;
 			}
 
 			if ( $condition ) { /* every pages !is_front_page() */
@@ -1955,9 +2246,9 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 						}
 					} else {
 						if ( isset( $wp_query->query_vars[QUETAG] ) ) {
-							$curlang = $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG]  ) ;
+							$curlang = $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG] ) ;
 						} else {
-							$curlang = $this->choice_of_categories_all_languages( $curlang ) ;  //$this->choice_of_browsing_language(); // again as defined 1.8.9.1
+							$curlang = $this->choice_of_categories_all_languages( $curlang ) ;	//$this->choice_of_browsing_language(); // again as defined 1.8.9.1
 						}
 					}
 				}
@@ -1970,12 +2261,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 				} else {
 
 					if ( 'page' == $showpage ) { //$this->show_page_on_front ) {
-						$page_front = get_option('page_on_front');  // filtered only if GET known
+						$page_front = get_option('page_on_front');	// filtered only if GET known
 						// 2.9.21
 						if ( in_array ( $wp_query->query_vars['page_id'], $this->xili_settings['show_page_on_front_array'] ) ) {
 							$curlang = get_cur_language( $wp_query->query_vars['page_id'] );
 						} else {
-							$curlang = get_cur_language( $page_front );  // redund !
+							$curlang = get_cur_language( $page_front );	// redund !
 						}
 
 					} else { // home.php - 1.3.2
@@ -1986,7 +2277,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 				}
 			}
 		} else { /*no posts for instance in category + lang */
-		 	if ( $this->lang_perma ) {
+			if ( $this->lang_perma ) {
 				if ( isset( $wp_query->query_vars[QUETAG] ) ) {
 					$curlang = $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG] ) ;
 				} else {
@@ -1996,22 +2287,22 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 				if ( isset( $wp_query->query_vars[QUETAG] ) ) {
 					$curlang = $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG] );
 				} else {
-					$curlang = $this->choice_of_browsing_language() ;  //$this->choice_of_browsing_language(); // again as defined 1.8.9.1
+					$curlang = $this->choice_of_browsing_language() ;	//$this->choice_of_browsing_language(); // again as defined 1.8.9.1
 				}
 			}
 		}
 
-		xili_xl_error_log ('#2021 - fin wp=' . $curlang );
+		xili_xl_error_log ('# '. __LINE__ .'  - fin get_curlang_action_wp =' . $curlang );
 
-		return str_replace ( LANG_UNDEF  , '' , $curlang ) ; // 2.3 to return main part
+		return str_replace ( LANG_UNDEF , '' , $curlang ) ; // 2.3 to return main part
 	}
 
 	/**
-	 * modify  language_attributes() output
+	 * modify language_attributes() output
 	 *
 	 * @since 0.9.7.6
 	 *
-	 * The - language_attributes() -  template tag is use in header of theme file in html tag
+	 * The - language_attributes() - template tag is use in header of theme file in html tag
 	 *
 	 * @param $output
 	 */
@@ -2026,7 +2317,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			$attributes[] = "dir=\"$dir\"";
 		if ( $this->langstate = true ) {
 
-			$lang = ( isset( $this->langs_slug_name_array[$this->curlang] ) ) ?  str_replace('_','-',$this->langs_slug_name_array[$this->curlang]) : ""; // 2.8.6
+			$lang = ( isset( $this->langs_slug_name_array[$this->curlang] ) ) ? str_replace('_','-',$this->langs_slug_name_array[$this->curlang]) : ""; // 2.8.6
 
 		} else {
 			//use hook if you decide to display limited list of languages for use by instance in frontpage
@@ -2052,7 +2343,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	}
 
 	/**
-	 * modify  insert language metas in head (via wp_head)
+	 * modify insert language metas in head (via wp_head)
 	 *
 	 * @since 0.9.7.6
 	 * @updated 1.1.8
@@ -2107,7 +2398,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			$listlanguages = $this->get_listlanguages();
 			foreach ( $listlanguages as $language ) {
 				$targetpost = $this->linked_post_in ( $post->ID, $language->slug ) ;
-				if ( $language->slug != $this->curlang  && !empty ( $targetpost ) ) {
+				if ( $language->slug != $this->curlang && !empty ( $targetpost ) ) {
 					$hreflang = $this->link_of_linked_post ( $post->ID, $language->slug ) ;
 					$lang = str_replace( '_', '-', $language->name );
 					printf ( '<link rel="alternate" hreflang="%s" href="%s" />'."\n", $lang, $hreflang ) ;
@@ -2122,11 +2413,15 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * @since 2.5
 	 *
 	 * @updated 2.11.1
+	 * @updated 2.11.2
 	 */
 	function current_url ( $lang_perma ) {
-		global $XL_Permalinks_rules;
+		// to create your own rules to build current url of language switcher in your own context
+		if ( has_filter('xiliml_link_current_url') ) return apply_filters( 'xiliml_link_current_url', $lang_perma );
+
+		global $XL_Permalinks_rules, $wp_query;
+		$format = get_post_format(); // take first current post format
 		if ( $lang_perma ) {
-			$format = get_post_format(); // take first current post format
 			if ( is_category() ) {
 				if ( version_compare( XILILANGUAGE_VER, '2.9.22', '<=') ) {
 					remove_filter('term_link', 'insert_lang_4cat') ;
@@ -2140,9 +2435,27 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					add_filter( 'term_link', array ( $XL_Permalinks_rules, 'insert_lang_taxonomy' ), 10, 3 );
 				}
 				$currenturl = $catcur;
-			} else  if ( is_archive() ) {
+
+			} else if ( is_tax ( $this->authorized_taxonomies) ) {
+
+				foreach ( $this->authorized_taxonomies as $taxonomy_tested ) {
+					if (is_tax ( $taxonomy_tested )) {
+
+						$t = get_taxonomy($taxonomy_tested);
+						$slug_var = ( $t->query_var) ? $t->query_var : $taxonomy_tested ;
+						global $wp_query;
+						$term_id = $wp_query->query_vars[$slug_var];
+
+						$termlink = get_term_link( $term_id, $taxonomy_tested );
+						//continue;
+					}
+				}
+
+				$currenturl = $termlink;
+
+			} else if ( is_archive() ) {
 				$post_type = get_post_type();
-				if ( is_post_type_archive ( $post_type ) ) {
+				if ( is_post_type_archive ( $post_type ) && isset($wp_query->query_vars['post_type']) ) {
 					$currenturl = ( get_post_type_archive_link($post_type)) ? get_post_type_archive_link($post_type) : get_bloginfo('url').'/%lang%/' ;
 				} else if ( is_date() ) {
 					global $wp_query;
@@ -2155,29 +2468,48 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 						$result = get_year_link($date_array['year'] ) ;
 					}
 					$currenturl = $result;
-				} else  if ( has_post_format($format) ) {
+				} else if ( has_post_format($format) && isset($wp_query->query_vars['post_format']) ) {
 					$currenturl = get_post_format_link ($format);
 				} else {
 					$currenturl = get_bloginfo('url').'/%lang%/';
 				}
-			} else  if ( has_post_format($format) ) {
+			} else if ( has_post_format($format) && isset($wp_query->query_vars['post_format']) ) { // in initial query
 				$currenturl = get_post_format_link ($format);
 
 			} else {
 				$currenturl = get_bloginfo('url').'/%lang%/';
 			}
 		} else {
-			if (is_category()) {
-				$catcur = xiliml_get_category_link();
+			if ( is_category() ) {
+				$catcur = xiliml_get_category_link(); // w/o default filter
 				$permalink = get_option('permalink_structure'); /* 1.6.0 */
 				$sep = ('' == $permalink) ? "&amp;" : "?" ;
 				$currenturl = $catcur.$sep;
-			} else  if ( is_archive() ) {
+
+			} else if ( is_tax ( $this->authorized_taxonomies) ) {
+
+				$permalink = get_option('permalink_structure'); /* 1.6.0 */
+				$sep = ('' == $permalink) ? "&amp;" : "?" ;
+				// ? cur tax ? cur term
+				foreach ( $this->authorized_taxonomies as $taxonomy_tested ) {
+					if (is_tax ( $taxonomy_tested )) {
+
+						$t = get_taxonomy($taxonomy_tested);
+						$slug_var = ( $t->query_var) ? $t->query_var : $taxonomy_tested ;
+						global $wp_query;
+						$term_id = $wp_query->query_vars[$slug_var];
+
+						$termlink = get_term_link( $term_id, $taxonomy_tested );
+					}
+				}
+				$currenturl = $termlink.$sep;
+
+			} else if ( is_archive() ) {
 				$permalink = get_option('permalink_structure'); /* 1.6.0 */
 				$sep = ('' == $permalink) ? "&amp;" : "?" ;
 
 				$post_type = get_post_type();
-				if ( is_post_type_archive ( $post_type ) ) {
+				if ( is_post_type_archive ( $post_type ) && isset($wp_query->query_vars['post_type']) ) {
 					$currenturl = ( get_post_type_archive_link($post_type)) ? get_post_type_archive_link($post_type).$sep : get_bloginfo('url').'/?' ;
 				} else if ( is_date() ) {
 					global $wp_query;
@@ -2190,11 +2522,16 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 						$result = get_year_link($date_array['year'] ) ;
 					}
 					$currenturl = $result.$sep;
+				} else if ( has_post_format($format) && isset($wp_query->query_vars['post_format']) ) {
+					$currenturl = get_post_format_link ($format).$sep;
 				} else {
 					$currenturl = get_bloginfo('url').'/?';
 				}
+			} else if ( has_post_format($format) && isset($wp_query->query_vars['post_format']) ) { // in initial query
+				$currenturl = get_post_format_link ($format).$sep;
+
 			} else {
-			 	$currenturl = get_bloginfo('url').'/?';
+				$currenturl = get_bloginfo('url').'/?';
 			}
 		}
 		return $currenturl;
@@ -2210,8 +2547,8 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	 function count_posts_in_taxonomy_and_lang ( $taxonomy, $slug = '' , $language = '', $post_type = 'post' ) {
 
-	 	$args = array(
-	 		'post_type' => $post_type,
+		$args = array(
+			'post_type' => $post_type,
 			'tax_query' => array(
 				'relation' => 'AND',
 				array(
@@ -2228,8 +2565,8 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		);
 		$query = new WP_Query( $args );
 
-	 	return $query->found_posts;
-	 }
+		return $query->found_posts;
+	}
 
 	/**
 	 * Translate texts of widgets or other simple text...
@@ -2260,7 +2597,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	}
 
 	/**
-	 * Add filters of texts of comment form  - because default text are linked with wp language (and not theme)
+	 * Add filters of texts of comment form - because default text are linked with wp language (and not theme)
 	 *
 	 * @since 1.5.5
 	 * @ return arrays with themetextdomain
@@ -2270,13 +2607,13 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 
 		$req = get_option( 'require_name_email' );
 		$aria_req = ( $req ? " aria-required='true'" : '' );
-		$fields =  array(
+		$fields = array(
 			'author' => '<p class="comment-form-author">' . '<label for="author">' . __( $this->comment_form_labels['name'], $this->thetextdomain ) . '</label> ' . ( $req ? '<span class="required">*</span>' : '' ) .
-			            '<input id="author" name="author" type="text" value="' . esc_attr( $commenter['comment_author'] ) . '" size="30"' . $aria_req . ' /></p>',
-			'email'  => '<p class="comment-form-email"><label for="email">' . __( $this->comment_form_labels['email'], $this->thetextdomain ) . '</label> ' . ( $req ? '<span class="required">*</span>' : '' ) .
-			            '<input id="email" name="email" type="text" value="' . esc_attr(  $commenter['comment_author_email'] ) . '" size="30"' . $aria_req . ' /></p>',
-			'url'    => '<p class="comment-form-url"><label for="url">' . __( $this->comment_form_labels['website'], $this->thetextdomain ) . '</label>' .
-			            '<input id="url" name="url" type="text" value="' . esc_attr( $commenter['comment_author_url'] ) . '" size="30" /></p>',
+				'<input id="author" name="author" type="text" value="' . esc_attr( $commenter['comment_author'] ) . '" size="30"' . $aria_req . ' /></p>',
+			'email' => '<p class="comment-form-email"><label for="email">' . __( $this->comment_form_labels['email'], $this->thetextdomain ) . '</label> ' . ( $req ? '<span class="required">*</span>' : '' ) .
+				'<input id="email" name="email" type="text" value="' . esc_attr( $commenter['comment_author_email'] ) . '" size="30"' . $aria_req . ' /></p>',
+			'url'	=> '<p class="comment-form-url"><label for="url">' . __( $this->comment_form_labels['website'], $this->thetextdomain ) . '</label>' .
+				'<input id="url" name="url" type="text" value="' . esc_attr( $commenter['comment_author_url'] ) . '" size="30" /></p>',
 		);
 		return $fields;
 	}
@@ -2284,15 +2621,21 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	function xili_comment_form_defaults ( $defaults ) {
 		global $user_identity, $post;
 		$req = get_option( 'require_name_email' );
+
+		$required_text = sprintf( ' ' . __( $this->comment_form_labels['requiredmarked'], $this->thetextdomain ), '<span class="required">*</span>' );
+
 		$xilidefaults = array(
 
 		'comment_field'        => '<p class="comment-form-comment"><label for="comment">' . _x( $this->comment_form_labels['comment'], 'noun', $this->thetextdomain ) . '</label><textarea id="comment" name="comment" cols="45" rows="8" aria-required="true"></textarea></p>',
-		'must_log_in'          => '<p class="must-log-in">' .  sprintf( __( $this->comment_form_labels['youmustbe'], $this->thetextdomain ), wp_login_url( apply_filters( 'the_permalink', get_permalink( $post->ID ) ) ) ) . '</p>',
+		'must_log_in'          => '<p class="must-log-in">' . sprintf( __( $this->comment_form_labels['youmustbe'], $this->thetextdomain ), wp_login_url( apply_filters( 'the_permalink', get_permalink( $post->ID ) ) ) ) . '</p>',
 		'logged_in_as'         => '<p class="logged-in-as">' . sprintf( __( $this->comment_form_labels['loggedinas'], $this->thetextdomain ), admin_url( 'profile.php' ), $user_identity, wp_logout_url( apply_filters( 'the_permalink', get_permalink( $post->ID ) ) ) ) . '</p>',
-		'comment_notes_before' => '<p class="comment-notes">' . __( $this->comment_form_labels['emailnotpublished'], $this->thetextdomain ) . ( $req ? __( $this->comment_form_labels['requiredmarked'], $this->thetextdomain ) : '' ) . '</p>',
-		'comment_notes_after'  => '<dl class="form-allowed-tags"><dt>' . __( $this->comment_form_labels['youmayuse'], $this->thetextdomain ) . '</dt> <dd><code>' . allowed_tags() . '</code></dd></dl>',
+		'comment_notes_before' => '<p class="comment-notes">' . __( $this->comment_form_labels['emailnotpublished'], $this->thetextdomain ) . ( $req ? $required_text : '' ) . '</p>',
+
+		'comment_notes_after'  => '<p class="form-allowed-tags" id="form-allowed-tags">' . sprintf( __( $this->comment_form_labels['youmayuse'], $this->thetextdomain ), ' <code>' . allowed_tags() . '</code>' ) . '</p>',
 		'id_form'              => 'commentform',
 		'id_submit'            => 'submit',
+		'class_submit'         => 'submit',
+		'name_submit'          => 'submit',
 		'title_reply'          => __( $this->comment_form_labels['leavereply'], $this->thetextdomain ),
 		'title_reply_to'       => __( $this->comment_form_labels['replyto'], $this->thetextdomain ),
 		'cancel_reply_link'    => __( $this->comment_form_labels['cancelreply'], $this->thetextdomain ),
@@ -2313,12 +2656,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	function xiliml_cat_language ( $content, $category = null ) {
 		if (has_filter('xiliml_cat_language')) return apply_filters('xiliml_cat_language',$content, $category,$this->curlang);
-	    $new_cat_name = (!is_admin()) ? __($category->name,$this->thetextdomain) : $content ;  /*to detect admin UI*/
-	    return $new_cat_name;
-	 }
+		$new_cat_name = (!is_admin()) ? __($category->name,$this->thetextdomain) : $content ;	/*to detect admin UI*/
+		return $new_cat_name;
+	}
 
 	/**
-	 * add the language key in category links of current pages
+	 * add the language key in category links of current pages - obsolete - backwards compatibility
 	 *
 	 * @since 0.9.0
 	 * update 0.9.7 1.5.1
@@ -2326,44 +2669,47 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * call by do_filter
 	 * @param $content,
 	 */
-	function xiliml_link_append_lang( $link, $category_id = 0 ) {
+	function xiliml_link_append_lang( $termlink, $category_id = 0 ) {
 		if ( has_filter( 'xiliml_link_append_lang' ) ) return apply_filters( 'xiliml_link_append_lang', $link, $category_id, $this->curlang );
 		/*default*/
 
-	  		if ($this->curlang) :
-	  		 	if ( !$this->lang_perma ){ // 2.1.1
-	  				$permalink = get_option( 'permalink_structure' );
-	  			 	$sep = ('' == $permalink) ? "&amp;".QUETAG."=" : "?".QUETAG."=";
-	  			 	$language_qv =  $this->lang_slug_qv_trans ( $this->curlang );
-	  				$link .= $sep. $language_qv ;
-				}
-
-	  		endif;
-
-	  return $link;
+		/*
+		if ($this->curlang) {
+			if ( !$this->lang_perma ){ // 2.1.1
+				$permalink = get_option( 'permalink_structure' );
+				$sep = ('' == $permalink) ? "&amp;".QUETAG."=" : "?".QUETAG."=";
+				$language_qv = $this->lang_slug_qv_trans ( $this->curlang );
+				$link .= $sep. $language_qv ;
+			}
+		}
+		return $link;
+		*/
+		return $this->xiliml_term_link_append_lang( $termlink, $category_id, 'category' ) ; // see below
 	}
 
 	/**
-	 * Setup global post data.
+	 * add the language key in term links of current pages
 	 *
-	 * @since 0.9.4
-	 * update 0.9.7
-	 * can be hooked by filter add_filter('xiliml_taglink_append_lang','yourfunction',2,3) in functions.php
+	 * @since 2.13.3
 	 *
-	 * @param $taglink, $tag_id.
-	 * @return $taglink.
+	 * can be hooked by filter add_filter('xiliml_term_link_append_lang','yourfunction',10 , 4) in functions.php
+	 *
+	 * @param $termlink, $term, $taxonomy
 	 */
-	function xiliml_taglink_append_lang ( $taglink, $tag_id=null ) {
-		if ( has_filter('xiliml_taglink_append_lang') ) return apply_filters('xiliml_taglink_append_lang',$taglink,$tag_id,$this->curlang);
-		/* no yet default */
-		/* global $curlang;
+	function xiliml_term_link_append_lang( $termlink, $term, $taxonomy ) {
+		if ( has_filter( 'xiliml_term_link_append_lang' ) ) return apply_filters( 'xiliml_term_link_append_lang', $termlink, $term, $taxonomy, $this->curlang );
+		/*default*/
 
-	  		if ($curlang) :
-	  			$taglink .= '&amp;'.QUETAG.'='.$curlang ;
-	  		endif;
+		if ( $this->curlang && in_array ( $taxonomy , array ( 'category' ) ) ) { // backwards compat
+			if ( !$this->lang_perma ){ // 2.1.1
+				$permalink = get_option( 'permalink_structure' );
+				$sep = ('' == $permalink) ? "&amp;".QUETAG."=" : "?".QUETAG."=";
+				$language_qv = $this->lang_slug_qv_trans ( $this->curlang );
+				$termlink .= $sep. $language_qv ;
+			}
+		}
 
-	  	*/
-	 return $taglink;
+		return $termlink;
 	}
 
 	/**
@@ -2375,15 +2721,15 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * @param $output, $show.
 	 * @return translated $output.
 	 */
-	 function xiliml_bloginfo ( $output, $show ) {
-	 	if (has_filter('xiliml_bloginfo')) return apply_filters('xiliml_bloginfo',$output, $show, $this->curlang);
-	 	$info_enabled = array('name', 'blogname', 'description');
-	 	if (in_array($show, $info_enabled)) {
-	 		return __($output, $this->thetextdomain);
-	 	} else {
-	 		return $output;
-	 	}
-	 }
+	function xiliml_bloginfo ( $output, $show ) {
+		if (has_filter('xiliml_bloginfo')) return apply_filters('xiliml_bloginfo',$output, $show, $this->curlang);
+		$info_enabled = array('name', 'blogname', 'description');
+		if (in_array($show, $info_enabled)) {
+			return __($output, $this->thetextdomain);
+		} else {
+			return $output;
+		}
+	}
 
 	/**
 	 * to cancel sub select by lang in cat 1 by default
@@ -2400,9 +2746,9 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		} else {
 			/*default*/
 			global $wp_query;
-			if ( defined('XILI_CATS_ALL') && !empty($wp_query->query_vars['cat']) )  { /* change in functions.php or use hook in cat 1 by default*/
+			if ( defined('XILI_CATS_ALL') && !empty($wp_query->query_vars['cat']) ) { /* change in functions.php or use hook in cat 1 by default*/
 				$excludecats = explode(",", XILI_CATS_ALL);
-				if 	( $excludecats != array() && in_array($wp_query->query_vars['cat'],$excludecats) ) {
+				if ( $excludecats != array() && in_array($wp_query->query_vars['cat'],$excludecats) ) {
 					$wp_query->query_vars[QUETAG] = "";	/* to cancel sub select */
 				}
 			}
@@ -2511,8 +2857,8 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	function xiliml_link_translate_desc( $description, $category=null, $context='' ) {
 		if (has_filter('xiliml_link_translate_desc')) return apply_filters('xiliml_link_translate_desc',$description,$category,$context,$this->curlang);
-	  	$translated_desc = ($this->curlang && ''!= $description) ? __($description, $this->thetextdomain) : $description ;
-	 	return $translated_desc;
+		$translated_desc = ($this->curlang && ''!= $description) ? __($description, $this->thetextdomain) : $description ;
+		return $translated_desc;
 	}
 
 	/**
@@ -2523,7 +2869,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	function xiliml_single_cat_title_translate ( $cat_name ) {
 		if (has_filter('xiliml_single_cat_title_translate')) return apply_filters('xiliml_single_cat_title_translate',$cat_name);
 		$translated = ($this->curlang && ''!= $cat_name) ? __($cat_name,$this->thetextdomain) : $cat_name;
-	 	return $translated;
+		return $translated;
 	}
 
 	/**
@@ -2535,18 +2881,18 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	function the_preferred_languages() {
 		$preferred_languages = array();
-			if( isset( $_SERVER["HTTP_ACCEPT_LANGUAGE"] ) && preg_match_all("#([^;,]+)(;[^,0-9]*([0-9\.]+)[^,]*)?#i",$_SERVER["HTTP_ACCEPT_LANGUAGE"], $matches, PREG_SET_ORDER)) {
-				foreach($matches as $match) {
-					if(isset($match[3])) {
-						$preferred_languages[$match[1]] = floatval($match[3]);
-					} else {
-						$preferred_languages[$match[1]] = 1.0;
-					}
+		if( isset( $_SERVER["HTTP_ACCEPT_LANGUAGE"] ) && preg_match_all("#([^;,]+)(;[^,0-9]*([0-9\.]+)[^,]*)?#i",$_SERVER["HTTP_ACCEPT_LANGUAGE"], $matches, PREG_SET_ORDER)) {
+			foreach($matches as $match) {
+				if ( isset($match[3]) ) {
+					$preferred_languages[$match[1]] = floatval($match[3]);
+				} else {
+					$preferred_languages[$match[1]] = 1.0;
 				}
-				return $preferred_languages;
-			} else {
-				return false;
 			}
+			return $preferred_languages;
+		} else {
+			return false;
+		}
 	}
 	/**
 	 * Return the lang defined by admin UI if no browser
@@ -2555,12 +2901,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 *
 	 */
 	function choice_of_home_selected_lang() {
-		if ($this->xili_settings['browseroption'] == 'browser') {
+		if ( $this->xili_settings['browseroption'] == 'browser' ) {
 			return choice_of_browsing_language();
 		} elseif ($this->xili_settings['browseroption'] != '') { /* slug of the lang*/
 			return $this->xili_settings['browseroption'];
 		} else {
-	 		return strtolower($this->default_lang);
+			return strtolower($this->default_lang);
 		}
 	}
 
@@ -2571,18 +2917,21 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * @updated 0.9.9.4
 	 * @updated 2.3.1 - lang_neither_browser
 	 * @updated 2.8.7 - strtolower
+	 * @updated 2.11.3 - wp_error
 	 * @return default target language
 	 */
-	function choice_of_browsing_language() {
+	function choice_of_browsing_language( $test = '') {
 		if ( has_filter('choice_of_browsing_language') ) return apply_filters('choice_of_browsing_language',''); // '' 2.3.1
 		if ( $this->xili_settings['browseroption'] != 'browser' ) return $this->choice_of_home_selected_lang(); /* in settings UI - after filter to hook w/o UI */
 		$listofprefs = $this->the_preferred_languages();
 		$default_lang = ( "" != $this->xili_settings['lang_neither_browser'] ) ? $this->xili_settings['lang_neither_browser'] : $this->default_lang ; //2.3.1
-		if ( is_array($listofprefs) ) {
+		if ( is_array( $listofprefs ) ) {
 			arsort($listofprefs, SORT_NUMERIC);
 			$listlanguages = get_terms(TAXONAME, array('hide_empty' => false));
-			$sitelanguage = $this->match_languages ( $listofprefs, $listlanguages );
-			if ( $sitelanguage ) return $sitelanguage->slug;
+			if ( ! is_wp_error( $listlanguages )) { // redundant to call in translate_page_on_front_ID filter 2.11.3
+				$sitelanguage = $this->match_languages ( $listofprefs, $listlanguages );
+				if ( $sitelanguage ) return $sitelanguage->slug;
+			}
 			return strtolower( $default_lang );
 		} else {
 			return strtolower( $default_lang );
@@ -2595,13 +2944,13 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	function match_languages ( $listofprefs, $listlanguages ) {
 
-		foreach($listofprefs as $browserlanguage => $priority) {
-					/* match root languages to give similar in site  - first : five chars langs*/
-			foreach($listlanguages as $sitelanguage) { // strtolower for IE - thanks to z8po // 2.8.7
+		foreach( $listofprefs as $browserlanguage => $priority ) {
+					/* match root languages to give similar in site - first : five chars langs*/
+			foreach( $listlanguages as $sitelanguage ) { // strtolower for IE - thanks to z8po // 2.8.7
 						// equal
-				if ( $sitelanguage->slug == str_replace('-', '_', strtolower( $browserlanguage )  ) ) return $sitelanguage;
+				if ( $sitelanguage->slug == str_replace('-', '_', strtolower( $browserlanguage ) ) ) return $sitelanguage;
 						// only first two chars
-				if ( strtolower( $browserlanguage ) == substr($sitelanguage->slug, 0, 2) ) return $sitelanguage;
+				if ( strtolower( $browserlanguage ) == substr( $sitelanguage->slug, 0, 2 ) ) return $sitelanguage;
 			}
 		}
 	}
@@ -2652,7 +3001,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		// and because tracs http://core.trac.wordpress.org/ticket/14115
 			if ($original_array != array()) {
 				$translated_array = array();
-				if ( isset( $wp_query->query_vars[QUETAG] )) { //if (isset($_GET[QUETAG])) {  // $_GET not usable by lang perma mode 2.8.1
+				if ( isset( $wp_query->query_vars[QUETAG] )) { //if (isset($_GET[QUETAG])) { // $_GET not usable by lang perma mode 2.8.1
 					$curlang = $wp_query->query_vars[QUETAG]; // $_GET[QUETAG];
 				} else {
 					$curlang = $this->choice_of_browsing_language(); // rule defined in admin UI
@@ -2666,7 +3015,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 							$translated_array[] = $trans_id;
 						} else {
 							if ( $this->sticky_keep_original === true ) $translated_array[] = $id;
-							// set by webmaster  in theme functions
+							// set by webmaster in theme functions
 
 						}
 					} else {
@@ -2689,12 +3038,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * @updated 2.6.3
 	 */
 	function get_option_wo_xili ( $option ) {
-		if ( $option == 'page_on_front' && has_filter ( 'option_'.$option,  array(&$this, 'translate_page_on_front_ID' )  ) ) { // 2.6.3
+		if ( $option == 'page_on_front' && has_filter ( 'option_'.$option, array(&$this, 'translate_page_on_front_ID' ) ) ) { // 2.6.3
 			remove_filter ( 'option_'.$option, array(&$this, 'translate_page_on_front_ID') );
 			$value = get_option ( $option ) ;
 			add_filter ( 'option_'.$option, array(&$this, 'translate_page_on_front_ID') );
 		} else {
-			$value = get_option (  $option ) ;
+			$value = get_option ( $option ) ;
 		}
 		return $value ;
 	}
@@ -2707,11 +3056,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 *
 	 */
 	function translate_page_on_front_ID ( $original_id ) {
+		if (! taxonomy_exists(TAXONAME) ) return $original_id; // for very initial call
 		$this->xili_test_lang_perma (); // not detected in WP hook
 		global $wp_query ;
 		if ( $this->lang_perma ) {
 			if ( !is_admin() && $this->show_page_on_front ) {
-			 	if ( isset( $wp_query->query_vars[QUETAG] ) && in_array ( $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG]), array_keys ( $this->show_page_on_front_array ) ) && '' != $wp_query->query_vars['page_id'] ) {
+				if ( isset( $wp_query->query_vars[QUETAG] ) && in_array ( $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG]), array_keys ( $this->show_page_on_front_array ) ) && '' != $wp_query->query_vars['page_id'] ) {
 					$curlang = $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG] );
 
 
@@ -2726,7 +3076,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 						$curlang = $this->choice_of_browsing_language(); // rule defined in admin UI
 
 				}
-			 	$trans_id = $this->linked_post_in( $original_id, $curlang ) ;
+				$trans_id = $this->linked_post_in( $original_id, $curlang ) ;
 
 				if ( '' != $trans_id ) {
 					return $trans_id;
@@ -2740,10 +3090,10 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		} else {
 
 			if ( !is_admin() && $this->show_page_on_front ) {
-				if ( isset( $wp_query->query_vars[QUETAG] ) ) {  // $this_curlang is not yet set
+				if ( isset( $wp_query->query_vars[QUETAG] ) ) {	// $this_curlang is not yet set
 					$curlang = $this->lang_qv_slug_trans ( $wp_query->query_vars[QUETAG] );
 				} else {
-					$curlang = $this->choice_of_browsing_language(); // rule defined in admin UI
+					$curlang = $this->choice_of_browsing_language('2760'); // rule defined in admin UI
 				}
 
 				$trans_id = $this-> linked_post_in( $original_id, $curlang ) ;
@@ -2767,12 +3117,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	function translate_page_for_posts_ID ( $original_id ) {
 		if ( empty ( $original_id ) ) return $original_id; // 2.8.4.1
 		global $wp_query ;
-		xili_xl_error_log ( ' #2790 ------->>>' .  $original_id . serialize ( $this->page_for_posts_name_array ) );
+		xili_xl_error_log ( '# ' . __LINE__ .'------->>>' . $original_id . serialize ( $this->page_for_posts_name_array ) );
 
-		if ( $this->is_permalink  ) {
+		if ( $this->is_permalink ) {
 			if ( isset($wp_query->query_vars['pagename']) && in_array ( $wp_query->query_vars['pagename'] , $this->page_for_posts_name_array ) ) {
 
-				xili_xl_error_log ( serialize ($this->page_for_posts_name_array) . ' #2795 ------->>>' . $wp_query->query_vars['pagename']  );
+				xili_xl_error_log ( '# ' . __LINE__ .' '.serialize ($this->page_for_posts_name_array) . ' ----perma--p-name--->>>' . $wp_query->query_vars['pagename'] );
 				$wp_query->is_page = false;
 				$wp_query->is_home = true;
 				$wp_query->is_posts_page = true;
@@ -2788,7 +3138,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		} else { // no permalinks
 			if ( isset($wp_query->query_vars['page_id']) && in_array ( $wp_query->query_vars['page_id'] , $this->page_for_posts_array ) ) {
 
-				xili_xl_error_log ( serialize ($this->page_for_posts_array) . ' #2811 ------->>>' . $wp_query->query_vars['page_id']  );
+				xili_xl_error_log ( '# ' . __LINE__ .' ' .serialize ($this->page_for_posts_array) . ' ------->>>' . $wp_query->query_vars['page_id'] );
 				$wp_query->is_page = false;
 				$wp_query->is_home = true;
 				$wp_query->is_posts_page = true;
@@ -2816,11 +3166,11 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			$thecustoms = array();
 
 			foreach ( $types as $type) {
-				$true = ( defined ('XDMSG') ) ? ( $type != XDMSG ) : true ;
+				$true = ( defined ('XDMSG') ) ? ( $type != XDMSG ) : true ; // exclude xdmsg of xili-dictionary
 				if ( $type != 'attachment' && $type != 'page' && $type != 'post' && $true == true ) { // temporary WP 3.5 attachement UI
 					$custom = get_post_type_object ($type);
 					$clabels = $custom->labels;
-					$thecustoms[$type] = array ('name' => $custom->label, 'singular_name' => $clabels->singular_name, 'multilingual'=>''  ) ;
+					$thecustoms[$type] = array ('name' => $custom->label, 'singular_name' => $clabels->singular_name, 'multilingual'=>'' ) ;
 				}
 			}
 			return $thecustoms ;
@@ -2855,7 +3205,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		$post_IDs = get_objects_in_term( array( $lang_term_id ), array( TAXONAME ) );
 		foreach ( $post_IDs as $post_ID ) {
 			// delete relationships posts
-	 		wp_delete_object_term_relationships( $post_ID, TAXONAME );
+			wp_delete_object_term_relationships( $post_ID, TAXONAME );
 		}
 		// links of blogroll
 		$links = get_objects_in_term( array( $lang_term_id ), array( 'link_'.TAXONAME ) );
@@ -2904,7 +3254,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 */
 	function theme_switched ( $theme ) {
 		$this->xili_settings['langs_folder'] = "";
-		$this->xili_settings['theme_domain'] = "";   /* to force future search in new theme */
+		$this->xili_settings['theme_domain'] = "";	/* to force future search in new theme */
 
 		$this->recover_alias_settings_of_previous_used_theme( $theme ) ; // 2.11.1
 
@@ -2931,7 +3281,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			$langdesc_array[] = $language->description;
 		}
 		/* detect menu inside location */
-		$menu_locations =  get_nav_menu_locations();
+		$menu_locations = get_nav_menu_locations();
 		$menuid = $menu_locations[$location];
 		$menuitem = wp_get_nav_menu_object($menuid);
 		$items = get_objects_in_term( $menuitem->term_id, 'nav_menu' );
@@ -2939,11 +3289,11 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		if ( ! empty( $items ) ) {
 			$founditems = wp_get_nav_menu_items($menuid); //try to see if a previous insert was done
 			foreach ($founditems as $item) {
-		 		if ($item->title =='|' || in_array($item->title, $langdesc_array)) {
-		 			$nothere = false;
-		 			break;
-		 		}
-		 	}
+				if ($item->title =='|' || in_array($item->title, $langdesc_array)) {
+					$nothere = false;
+					break;
+				}
+			}
 		}
 		if ( $nothere == true ) {
 			/* add separator */
@@ -3009,7 +3359,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	/**
 	 * only active if 'lang' in template tag wp_list_bookmarks()
 	 *
-	 * as :  wp_list_bookmarks( array( 'lang'=>the_curlang() ) ) to display only in current language
+	 * as :	wp_list_bookmarks( array( 'lang'=>the_curlang() ) ) to display only in current language
 	 *
 	 * don't interfere with widget_links filter
 	 *
@@ -3038,7 +3388,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * @ since 1.8.5
 	 */
 	function add_link_taxonomy () {
-		register_taxonomy( 'link_'.TAXONAME, 'link', array('hierarchical' => false, 'label' => false, 'rewrite' => false, 'update_count_callback' =>  array(&$this,'_update_link_lang_count'), 'show_ui' => false, '_builtin' => false ));
+		register_taxonomy( 'link_'.TAXONAME, 'link', array('hierarchical' => false, 'label' => false, 'rewrite' => false, 'update_count_callback' => array(&$this,'_update_link_lang_count'), 'show_ui' => false, '_builtin' => false ));
 
 	}
 	// count update
@@ -3063,10 +3413,10 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
  	*/
 
 	function add_new_widgets() {
-		load_plugin_textdomain('xili-language-widget',false, 'xili-language/languages'); // 1.8.8.1 fixes translation and red messages
- 		register_widget('xili_Widget_Recent_Posts'); // since 1.3.2
- 		register_widget('xili_WP_Widget_Recent_Comments'); // since 1.8.3
- 		register_widget('xili_language_Widgets'); // since 1.8.3
+
+		register_widget('xili_Widget_Recent_Posts'); // since 1.3.2
+		register_widget('xili_WP_Widget_Recent_Comments'); // since 1.8.3
+		register_widget('xili_language_Widgets'); // since 1.8.3
 	}
 
 	//********************************************//
@@ -3107,9 +3457,9 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			foreach ($listlanguages as $language) {
 				$this->doing_list_language = $language->slug;
 				$currenturl = $this->current_url ( $lang_perma ); // 2.5
-				$language_qv =  $this->lang_slug_qv_trans ( $language->slug );
+				$language_qv = $this->lang_slug_qv_trans ( $language->slug );
 				$display = ( $hidden && ( $this->xili_settings['lang_features'][$language->slug]['hidden'] == 'hidden' ) ) ? false : true ;
-				if ($language->slug != the_curlang()   && $display ) {
+				if ($language->slug != the_curlang() && $display ) {
 					$beforee = ( $before_class && $before == '<li>' ) ? '<li class="lang-'.$language->slug.'" >': $before;
 					$class = ' class="lang-'.$language->slug.'"';
 
@@ -3119,22 +3469,22 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 				}
 			}
 			$this->doing_list_language = false;
-		} elseif ($option == 'typeonenew') {  // 2.1.0
+		} elseif ($option == 'typeonenew') { // 2.1.0
 			/* the rules : don't display the current lang if set and add link of category if is_category() but display linked singular */
 
 			foreach ($listlanguages as $language) {
 				$this->doing_list_language = $language->slug;
 				$currenturl = $this->current_url ( $lang_perma ); // 2.5
-				$language_qv =  $this->lang_slug_qv_trans ( $language->slug );
+				$language_qv = $this->lang_slug_qv_trans ( $language->slug );
 				$display = ( $hidden && ( $this->xili_settings['lang_features'][$language->slug]['hidden'] == 'hidden' ) ) ? false : true ;
-				if ($language->slug != the_curlang()   && $display ) {
+				if ($language->slug != the_curlang() && $display ) {
 					$beforee = ( $before_class && $before == '<li>' ) ? '<li class="lang-'.$language->slug.'" >': $before;
 					$class = ' class="lang-'.$language->slug.'"';
 
 					if ( ( is_single() || is_page() ) && !is_front_page() ) {
 						$link = $this->link_of_linked_post ( $post->ID, $language->slug ) ;
 						$title = sprintf (__($this->xili_settings['list_link_title']['current_post'], $this->thetextdomain ), _x($language->description, 'linktitle', $this->thetextdomain ) );
-					} else if (  $wp_query->is_posts_page ) { // 2.8.4
+					} else if ( $wp_query->is_posts_page ) { // 2.8.4
 						$link = $this->link_of_linked_post ( get_option( 'page_for_posts' ) , $language->slug ) ;
 						$title = sprintf (__($this->xili_settings['list_link_title']['latest_posts'], the_theme_domain()), _x($language->description, 'linktitle', $this->thetextdomain) ) ;
 					} else {
@@ -3147,16 +3497,16 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			}
 			$this->doing_list_language = false;
 
-		} elseif ( in_array ( $option, array ( 'navmenu', 'navmenu-a' ) ))  {	 /* current list in nav menu 1.6.0 */
+		} elseif ( in_array ( $option, array ( 'navmenu', 'navmenu-a' ) )) {	/* current list in nav menu 1.6.0 */
 			if ( $lang_perma ) {
 				$currenturl = get_bloginfo('url').'/%lang%/';
 			} else {
-	 			$currenturl = get_bloginfo('url').'/?';
+				$currenturl = get_bloginfo('url').'/?';
 			}
 				foreach ($listlanguages as $language) {
 
 					if ( ! ( $option == 'navmenu-a' && $language->slug == the_curlang() ) ) { // 2.8.4.3
-						$language_qv =  $this->lang_slug_qv_trans ( $language->slug );
+						$language_qv = $this->lang_slug_qv_trans ( $language->slug );
 						$display = ( $hidden && ( $this->xili_settings['lang_features'][$language->slug]['hidden'] == 'hidden' ) ) ? false : true ;
 						if ( $display ) {
 							if ($language->slug != the_curlang() ) {
@@ -3174,13 +3524,13 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					}
 				}
 
-		} elseif ( in_array ( $option, array ( 'navmenu-1', 'navmenu-1a', 'navmenu-1ao' ) ) )  {	// 2.1.0  and single
+		} elseif ( in_array ( $option, array ( 'navmenu-1', 'navmenu-1a', 'navmenu-1ao' ) ) ) {	// 2.1.1 and single
 
 				foreach ($listlanguages as $language) {
 					$link = false;
 					if ( ! ( ( $option == 'navmenu-1a' || $option == 'navmenu-1ao' ) && $language->slug == the_curlang() ) ) { // 2.8.4.3
 
-						$language_qv =  $this->lang_slug_qv_trans ( $language->slug );
+						$language_qv = $this->lang_slug_qv_trans ( $language->slug );
 						$display = ( $hidden && ( $this->xili_settings['lang_features'][$language->slug]['hidden'] == 'hidden' ) ) ? false : true ;
 						if ( $display ) {
 
@@ -3195,12 +3545,12 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 									$link = $this->link_of_linked_post ( $post->ID, $language->slug ) ;
 								} else {
 									$targetpost = $this->linked_post_in ( $post->ID, $language->slug ) ;
-	 								if ( $targetpost ) {
-	 									$link = get_permalink($targetpost);
-	 								}
+									if ( $targetpost ) {
+										$link = get_permalink($targetpost);
+									}
 								}
 								$title = sprintf (__($this->xili_settings['list_link_title']['current_post'],the_theme_domain()), __($language->description, $this->thetextdomain) ) ;
-							} else if (  $wp_query->is_posts_page ) { // 2.8.4
+							} else if ( $wp_query->is_posts_page ) { // 2.8.4
 								$link = $this->link_of_linked_post ( get_option( 'page_for_posts' ) , $language->slug ) ;
 								$title = sprintf (__($this->xili_settings['list_link_title']['latest_posts'], the_theme_domain()), _x($language->description, 'linktitle', $this->thetextdomain) ) ;
 							} else {
@@ -3223,10 +3573,10 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			if ( $lang_perma ) {
 				$currenturl = get_bloginfo('url').'/%lang%/';
 			} else {
- 				$currenturl = get_bloginfo('url').'/?';
+				$currenturl = get_bloginfo('url').'/?';
 			}
 			foreach ($listlanguages as $language) {
-				$language_qv =  $this->lang_slug_qv_trans ( $language->slug );
+				$language_qv = $this->lang_slug_qv_trans ( $language->slug );
 				$display = ( $hidden && ( $this->xili_settings['lang_features'][$language->slug]['hidden'] == 'hidden' ) ) ? false : true ;
 
 				if ( $display ) {
@@ -3255,6 +3605,8 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 * @since 2.8.8
 	 * @updated 2.9.11 (page) , 2.9.20 (menu)
 	 * @updated 2.10.1 - singular if exists
+	 * @updated 2.11.2 - better class assignation (ancestor) - thanks to Bastian
+	 * @updated 2.12.2 - compatible
 	 *
 	 */
 	function insert_language_objects_in_nav_menu ( $sorted_menu_items, $args ) {
@@ -3265,49 +3617,72 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 
 		foreach ( $sorted_menu_items as $key => $menu_object ) {
 
-			if ( $menu_object->url == $this->insertion_point_dummy_link_menu ) {
+			if ( $menu_object->url == $this->insertion_point_dummy_link_menu ) { // #insertmenu
 
 				$queried_object = $wp_query->get_queried_object();
 				$queried_object_id = (int) $wp_query->queried_object_id;
 
-				$langkey = explode ( '-', str_replace ( 'menu-wo-', '', $menu_object->attr_title ) ) ;
+				if ( false !== strpos ( $menu_object->attr_title , 'menu-wo-' ) ){
+					$langkey = explode ( '-', str_replace ( 'menu-wo-', '', $menu_object->attr_title ) ) ; // approach < 2.14.2
+				} else {
+					$langkey_ids = explode ( '-', str_replace ( 'menu-wlid-', '', $menu_object->attr_title ) ) ;
+					$langkey = array();
+					$id_slug = array_flip($this->langs_ids_array);
+					foreach ( $langkey_ids as $lang_id ) {
+						$langkey[] = $id_slug[$lang_id] ;
+					}
+				}
+
+				$menu_id_list = '';
+				$menu_slug_list = '';
 
 				foreach ( $menu_object->classes as $one_class ) {
 					if ( false !== strpos ( $one_class , 'xlmenulist-' ) ){
 						$menu_id_list = str_replace ( 'xlmenulist-', '', $one_class );
 						continue;
+					} else if ( false !== strpos ( $one_class , 'xlmenuslug' ) ) { // to be compatible with export xml
+						$menu_slug_list = str_replace ( 'xlmenuslug'.$this->menu_slug_sep, '', $one_class ); // -- seems better than _
+						continue;
 					}
 				}
-				$menu_ids = explode ( '-', $menu_id_list );
+				if ( $menu_id_list ) {
+					$menu_ids = explode ( '-', $menu_id_list ); // here saved as term_id (container of menu items) (<2.12.2)
 
-				$menu_list =  array_combine ( $langkey, $menu_ids );
+				} else if ( $menu_slug_list ) {
+					$menu_slugs = explode ( $this->menu_slug_sep, $menu_slug_list );
+					foreach ( $menu_slugs as $one_slug ) {
+						$term_data = term_exists( $one_slug, 'nav_menu' );
+						$menu_ids[] = ( is_array( $term_data ) ) ? $term_data['term_id'] : 0;
+					}
+				}
+
+				$menu_list = ( count( $langkey ) == count( $menu_ids )   ) ? array_combine ( $langkey, $menu_ids ) : array();  // pb in count
 
 				$curlang = the_curlang();
 
-				if ( $curlang && isset ( $menu_list [ $curlang ] ) && (int) $menu_list [ $curlang ] > 0 ) {
+				if ( isset ( $menu_list [ $curlang ] ) ) {
 
-					$menu_items = wp_get_nav_menu_items( $menu_list [ $curlang ] );
+					$menu_structure_exists = ( term_exists( (int)$menu_list [ $curlang ], 'nav_menu' ) ) ? true : false;
 
+				} else {
+					$menu_structure_exists = false ;
+				}
+
+				if ( $curlang && $menu_structure_exists ) {
+
+					$menu_items = wp_get_nav_menu_items( $menu_list [ $curlang ] ); // need term_id of structure
+					_wp_menu_item_classes_by_context( $menu_items ); // added 2.11.2
 					if ( $menu_items ) {
-						foreach (  $menu_items as $new_menu_item ) {
-							// not recursive :  impossible to decode insertion point inside menu
-							if 	( !in_array ( $new_menu_item->url , array ( $this->insertion_point_dummy_link_menu, $this->insertion_point_dummy_link_page, $this->insertion_point_dummy_link ) )  ) {
+						foreach ( $menu_items as $new_menu_item ) {
+							// not recursive : impossible to decode insertion point inside menu
+							if ( !in_array ( $new_menu_item->url , array ( $this->insertion_point_dummy_link_menu, $this->insertion_point_dummy_link_page, $this->insertion_point_dummy_link ) ) ) {
 
 								$new_classes = array("insertion-point");
-
-								if ( $new_menu_item->object_id == $queried_object_id &&
-									(
-										( ! empty( $home_page_id ) && 'post_type' == $new_menu_item->type && $wp_query->is_home && $home_page_id == $new_menu_item->object_id ) ||
-									( 'post_type' == $new_menu_item->type && $wp_query->is_singular ) ||
-									( 'taxonomy' == $new_menu_item->type && ( $wp_query->is_category || $wp_query->is_tag || $wp_query->is_tax ) && $queried_object->taxonomy == $new_menu_item->object )
-									)
-								) {
-									$new_classes[] = 'current-menu-item';
-								}
+								
 								if ( $new_menu_item->menu_item_parent == 0 )
 									$new_menu_item->menu_item_parent = $menu_object->menu_item_parent; // heritate from insertion point
 
-								$new_menu_item->classes = array_merge ( $menu_object->classes, $new_classes );
+								$new_menu_item->classes = array_merge ( $menu_object->classes, $new_classes, $new_menu_item->classes ); // fixed 2.11.2
 
 								$new_sorted_menu_items[] = $new_menu_item;
 
@@ -3316,7 +3691,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					}
 				}
 
-			} else if ( $menu_object->url == $this->insertion_point_dummy_link_page ) {
+			} else if ( $menu_object->url == $this->insertion_point_dummy_link_page ) { // #insertpagelist
 				$classes = $menu_object->classes;
 
 				$i = 0;
@@ -3341,10 +3716,10 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					$new_lang_menu_item = (object) array();
 					$id = $menu_object->ID * 1000 + $i;
 					$new_lang_menu_item->ID = $id;
-					$new_lang_menu_item->url = $onepage->guid;
+					$new_lang_menu_item->url = get_permalink( $onepage->ID ); // $onepage->guid;
 					$new_lang_menu_item->title = $onepage->post_title;;
-					$new_lang_menu_item->attr_title = '...';
-
+					$new_lang_menu_item->attr_title = apply_filters('xl_nav_menu_page_attr_title', '...', $onepage->ID);;
+					$new_lang_menu_item->description = apply_filters('xl_nav_menu_page_description', '', $onepage->ID); // for twentyfifteen 2.15.4
 					$new_lang_menu_item->menu_item_parent = $menu_object->menu_item_parent;
 					$new_lang_menu_item->db_id = $menu_object->db_id;
 					$new_lang_menu_item->target = $menu_object->target;
@@ -3365,7 +3740,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					$keys[] = $one[0];
 				}
 
-				$type_array = array_values ( array_intersect ( $keys , $menu_object->classes  ) );
+				$type_array = array_values ( array_intersect ( $keys , $menu_object->classes ) );
 
 				$type = $type_array[0];
 
@@ -3379,34 +3754,34 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					$link = false;
 					$display = ( $hidden && ( $this->xili_settings['lang_features'][$language->slug]['hidden'] == 'hidden' ) ) ? false : true ;
 
-					if ( $display && ( ! ( in_array ($type,  array ( 'navmenu-a', 'navmenu-1a', 'navmenu-1ao' ) ) && $language->slug == the_curlang() ) ) ) {
+					if ( $display && ( ! ( in_array ($type, array ( 'navmenu-a', 'navmenu-1a', 'navmenu-1ao' ) ) && $language->slug == the_curlang() ) ) ) {
 						$i++;
 						if ($language->slug != the_curlang() ) {
 							$class = 'lang-'.$language->slug;
 						} else {
 							$class = 'lang-'.$language->slug . ' current-lang current-menu-item';
 						}
-						$language_qv =  $this->lang_slug_qv_trans ( $language->slug );
+						$language_qv = $this->lang_slug_qv_trans ( $language->slug );
 
-						if ( in_array ( $type,  array ( 'navmenu-1', 'navmenu-1a', 'navmenu-1ao' ) ) ) {
-							$this->doing_list_language = $language->slug; //  for date filter if lang_perma
+						if ( in_array ( $type, array ( 'navmenu-1', 'navmenu-1a', 'navmenu-1ao' ) ) ) {
+							$this->doing_list_language = $language->slug; // for date filter if lang_perma
 							$currenturl = $this->current_url ( $this->lang_perma );
 
-							if (  is_singular() && !is_front_page()  ) {
-								if ($type == 'navmenu-1a') {
+							if ( is_singular() && !is_front_page() ) {
+								if ( in_array( $type, array ( 'navmenu-1a', 'navmenu-1' ) ) ){ // 2.13.3
 									$link = $this->link_of_linked_post ( $post->ID, $language->slug ) ;
 								} else {
 									$targetpost = $this->linked_post_in ( $post->ID, $language->slug ) ;
-	 								if ( $targetpost ) {
-	 									$link = get_permalink($targetpost);
-	 								}
+									if ( $targetpost ) {
+										$link = get_permalink($targetpost);
+									}
 								}
 								$title = sprintf (__($this->xili_settings['list_link_title']['current_post'],the_theme_domain()), __($language->description, $this->thetextdomain) ) ;
-							} else if (  $wp_query->is_posts_page ) { // 2.8.4
+							} else if ( $wp_query->is_posts_page ) { // 2.8.4
 								$link = $this->link_of_linked_post ( get_option( 'page_for_posts' ) , $language->slug ) ;
 								$title = sprintf (__($this->xili_settings['list_link_title']['latest_posts'], the_theme_domain()), _x($language->description, 'linktitle', $this->thetextdomain) ) ;
 
-							} else if ( function_exists('xili_tidy_tag_in_other_lang') && ( is_tag () || $this->is_tax_improved() )  ) { // 2.9.1
+							} else if ( function_exists('xili_tidy_tag_in_other_lang') && ( is_tag () || $this->is_tax_improved() ) ) { // 2.9.1
 
 								$q = '';
 								if ( !is_tag () && $this->is_tax_improved() ) {
@@ -3415,7 +3790,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 								}
 
 								if ( $link = xili_tidy_tag_in_other_lang("format=term_link&lang=".$language->name.$q )) {
-									$title =  xili_tidy_tag_in_other_lang("format=term_name&lang=".$language->name.$q );
+									$title = xili_tidy_tag_in_other_lang("format=term_name&lang=".$language->name.$q );
 								} else {
 									$link = ( $this->lang_perma ) ? str_replace ( '%lang%', $language_qv, $currenturl ) : $currenturl.QUETAG."=".$language_qv ;
 									$title = sprintf ( __($this->xili_settings['list_link_title']['post_selected'], the_theme_domain()), _x($language->description, 'linktitle', $this->thetextdomain ) ) ;
@@ -3432,7 +3807,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 							if ( $this->lang_perma ) {
 								$currenturl = get_bloginfo('url').'/%lang%/';
 							} else {
-	 							$currenturl = get_bloginfo('url').'/?';
+								$currenturl = get_bloginfo('url').'/?';
 							}
 							$link = ( $this->lang_perma ) ? str_replace ( '%lang%', $language_qv, $currenturl ) : $currenturl.QUETAG."=".$language_qv ;
 							$title = esc_attr( sprintf(__($this->xili_settings['list_link_title']['post_selected'], $this->thetextdomain ), _x( $language->description, 'linktitle', $this->thetextdomain ) ) );
@@ -3446,7 +3821,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 							$new_lang_menu_item->url = $link;
 							$new_lang_menu_item->title = __( $language->description, $this->thetextdomain );
 							$new_lang_menu_item->attr_title = $title;
-
+							$new_lang_menu_item->description = apply_filters('xl_nav_menu_lang_description', '', $language->slug); // for twentyfifteen 2.15.4
 							$new_lang_menu_item->menu_item_parent = $menu_object->menu_item_parent;
 							$new_lang_menu_item->db_id = $menu_object->db_id;
 							$new_lang_menu_item->target = $menu_object->target;
@@ -3461,7 +3836,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 
 			} else { // no dummy insertion
 
-				   $new_sorted_menu_items[] = $menu_object;
+				$new_sorted_menu_items[] = $menu_object;
 			}
 
 		} // foreach menu
@@ -3489,7 +3864,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 
 			// test taxonomy topic-tag - cannot use is_tax -
 
-			if ( class_exists ( 'bbpress' ) && $queried_object->taxonomy == get_option( '_bbp_topic_tag_slug', 'topic-tag' )  ) return true;
+			if ( class_exists ( 'bbpress' ) && $queried_object->taxonomy == get_option( '_bbp_topic_tag_slug', 'topic-tag' ) ) return true;
 
 			// test other taxonomy
 
@@ -3539,22 +3914,22 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 	 *
 	 * @since 2.1.0
 	 *
-	 * @updated 2.1.1
+	 * @updated 2.15.4
 	 */
 	function link_of_linked_post ( $fromID, $lang_slug ) {
-	 	$targetpost = $this->linked_post_in ( $fromID, $lang_slug ) ;
-	 	if ( $targetpost ) {
-	 		return get_permalink($targetpost);
-	 	} else {
-	 		if ( $this->lang_perma ) {
-	 			$currenturl = get_bloginfo('url').'/%lang%/';
-	 		} else	{
-	 			$currenturl = get_bloginfo('url') . '/?';
-	 		}
-	 		$language_qv =  $this->lang_slug_qv_trans ( $lang_slug );
-	 		$link = ( $this->lang_perma ) ? str_replace ( '%lang%', $language_qv, $currenturl ) : $currenturl.QUETAG . '=' . $language_qv ;
-	 	    return $link ;
-	 	}
+		$targetpost = $this->linked_post_in ( $fromID, $lang_slug ) ;
+		if ( $targetpost && 'publish' == get_post_status( $targetpost ) ) { // 2.15.4
+			return get_permalink( $targetpost );
+		} else {
+			if ( $this->lang_perma ) {
+				$currenturl = get_bloginfo('url').'/%lang%/';
+			} else {
+				$currenturl = get_bloginfo('url') . '/?';
+			}
+			$language_qv = $this->lang_slug_qv_trans ( $lang_slug );
+			$link = ( $this->lang_perma ) ? str_replace ( '%lang%', $language_qv, $currenturl ) : $currenturl.QUETAG . '=' . $language_qv ;
+			return $link ;
+		}
 	}
 
 	/**
@@ -3621,7 +3996,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 			}
 			if ( $type == "display" || $type == "" ) { // 2.8.8
 				if ( !empty($outputarr) ) {
-					$output =  ( ( $before !="" ) ? __( $before, $this->thetextdomain )." " : "" ) . implode ( $separator, $outputarr );
+					$output = ( ( $before !="" ) ? __( $before, $this->thetextdomain )." " : "" ) . implode ( $separator, $outputarr );
 					if ( $type == "display")
 						echo $output;
 					else
@@ -3658,7 +4033,7 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 		$rel = ( is_object( $wp_rewrite ) && $wp_rewrite->using_permalinks() ) ? 'rel="category tag"' : 'rel="category"'; // 2.8.9
 		$i = 0;
 
-		$view_all_posts = __( $this->xili_settings['list_link_title']['view_all_posts'], $this->thetextdomain  ) ;
+		$view_all_posts = __( $this->xili_settings['list_link_title']['view_all_posts'], $this->thetextdomain ) ;
 
 		foreach ($the_cats_list as $the_cat) {
 			if ( 0 < $i )
@@ -3670,10 +4045,10 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 
 			$the_catlink = '<a href="' . get_category_link($the_cat->term_id) . '" title="' . $title . '" ' . $rel . '>';
 			//if ($curlang != DEFAULTSLUG) :
-	      	$the_catlink .=  __( $the_cat->name, $this->thetextdomain ).'</a>';;
-	      	//else :
-	      		 //$the_catlink .=  $the_cat->name.'</a>';;
-	      	//endif;
+			$the_catlink .= __( $the_cat->name, $this->thetextdomain ).'</a>';;
+			//else :
+				//$the_catlink .= $the_cat->name.'</a>';;
+			//endif;
 			$thelist .= $the_catlink;
 			++$i;
 		}
@@ -3711,19 +4086,19 @@ xili_xl_error_log ('ici - doit where (#1436) = ' . serialize($do_it) );
 					$selected = "";
 				}
 			} else {
-				$selected =  ( ( $language->slug == $this->curlang ) ) ? 'checked="checked"' : "" ;
+				$selected = ( ( $language->slug == $this->curlang ) ) ? 'checked="checked"' : "" ;
 			}
 			$a .= $before.'<input onClick="if(this.form.clear.checked) { this.form.clear.checked = false; }" type="radio" name="'.QUETAG.'" value="'.$language->slug.'" id="'.QUETAG.'-'.$language->slug.'" '.$selected.' />&nbsp;'._x( $language->description, 'searchform', $this->thetextdomain ).' '.$after;
 		}
 		// new javascript to uncheck radio buttons	on form named searchform form.
-	    $a .= $before.'<input type="radio" name="clear" onClick="
-for (var i=0; i < this.form.' .QUETAG .'.length ; i++) { if(this.form.'.QUETAG.'[i].checked) { this.form.'.QUETAG.'[i].checked = false; }  };" />&nbsp;'. __('All', $this->thetextdomain ) . $after;
+		$a .= $before.'<input type="radio" name="clear" onClick="
+for (var i=0; i < this.form.' .QUETAG .'.length ; i++) { if(this.form.'.QUETAG.'[i].checked) { this.form.'.QUETAG.'[i].checked = false; } };" />&nbsp;'. __('All', $this->thetextdomain ) . $after;
  // this to all lang query
 
-	    if ( $echo )
-	    	echo $a;
-	    else
-	    	return $a;
+		if ( $echo )
+			echo $a;
+		else
+			return $a;
 
 	}
 
@@ -3776,8 +4151,8 @@ for (var i=0; i < this.form.' .QUETAG .'.length ; i++) { if(this.form.'.QUETAG.'
 					if (''!= $reqtag) {
 						$wherereqtag = $reqtag['term_id'];
 						$join = " LEFT JOIN $wpdb->term_relationships as tr ON ($wpdb->comments.comment_post_ID = tr.object_id) LEFT JOIN $wpdb->term_taxonomy as tt ON (tr.term_taxonomy_id = tt.term_taxonomy_id) ";
-					    $where = " AND tt.taxonomy = '".TAXONAME."' ";
-					    $where .= " AND tt.term_id = $wherereqtag ";
+						$where = " AND tt.taxonomy = '".TAXONAME."' ";
+						$where .= " AND tt.term_id = $wherereqtag ";
 					}
 				$query = "SELECT * FROM $wpdb->comments".$join." WHERE comment_approved = '1' ".$where." ORDER BY comment_date_gmt DESC LIMIT $number";
 
@@ -3788,12 +4163,12 @@ for (var i=0; i < this.form.' .QUETAG .'.length ; i++) { if(this.form.'.QUETAG.'
 	}
 
 	/**
- 	* Enable to add functions and filters that are not in theme's functions.php
- 	* These filters are common even if you change default theme...
- 	* Place your functions.php in folder plugins/xilidev-libraries/
- 	* if you have a filter in this file, avoid to have similar one in functions.php of the theme !!!
-	*
- 	*/
+	 * Enable to add functions and filters that are not in theme's functions.php
+	 * These filters are common even if you change default theme...
+	 * Place your functions.php in folder plugins/xilidev-libraries/
+	 * if you have a filter in this file, avoid to have similar one in functions.php of the theme !!!
+	 *
+	 */
 	function insert_gold_functions () {
 		$gold_path = WP_PLUGIN_DIR . $this->xilidev_folder ; /* since 1.0 to add xili-libraries */
 		if ( $this->xili_settings['functions_enable'] !='' && file_exists( $gold_path . '/functions.php') )
@@ -3817,12 +4192,12 @@ for (var i=0; i < this.form.' .QUETAG .'.length ; i++) { if(this.form.'.QUETAG.'
 			//return apply_filters( 'the_category', '', $separator, $parents );
 
 		if ( empty( $categories ) ) {
-			return  __( 'Uncategorized', $this->thetextdomain ) ; // fixed - avoid a previous recursive filter with custom @since 1.8.0
+			return __( 'Uncategorized', $this->thetextdomain ) ; // fixed - avoid a previous recursive filter with custom @since 1.8.0
 		}
 		$rel = ( is_object( $wp_rewrite ) && $wp_rewrite->using_permalinks() ) ? 'rel="category tag"' : 'rel="category"';
 
 		$thelist = '';
-		$view_all_posts = __( $this->xili_settings['list_link_title']['view_all_posts'], $this->thetextdomain  ) ;
+		$view_all_posts = __( $this->xili_settings['list_link_title']['view_all_posts'], $this->thetextdomain ) ;
 		if ( '' == $separator ) {
 			$thelist .= '<ul class="post-categories">';
 			foreach ( $categories as $category ) {
@@ -3888,21 +4263,329 @@ for (var i=0; i < this.form.' .QUETAG .'.length ; i++) { if(this.form.'.QUETAG.'
 	function has_insertion_point_list_menu ( $menu_location, $insertion_point_dummy_link ) {
 		$locations_all = get_nav_menu_locations();
 		$point = 0;
-		 if ( has_nav_menu ( $menu_location ) && isset( $locations_all[ $menu_location ] ) ) {
+		if ( has_nav_menu ( $menu_location ) && isset( $locations_all[ $menu_location ] ) ) {
 				$menu = wp_get_nav_menu_object( $locations_all[ $menu_location ] );
 				$menu_items = wp_get_nav_menu_items($menu->term_id);
 
 				foreach ( $menu_items as $one_item) {
 					if ( $one_item->url == $insertion_point_dummy_link ) $point++ ;
 				}
-		 }
-		 return $point;
+		}
+		return $point;
 	}
 
+	/**
+	 * SHORTCODE: insert translated msgid content according current language
+	 *
+	 * [xili18n msgid='yes']
+	 * [xili18n msgid='yes' ctxt='front']
+	 * [xili18n msgid='yes' ctxt='front' textdomain='default'] - core wp language file
+	 * return with only em strong br
+	 * return '' if issues in textdomain or msgid
+	 *
+	 * @since 2.12.0
+	 */
+	function xili18n_shortcode ( $atts, $content = null ) {
+		extract(shortcode_atts(array(
+			'msgid' => '',
+			'textdomain' => $this->thetextdomain, // by default theme textdomain
+			'ctxt' => '' // context to adapt translation
+		), $atts));
+		if ( $msgid && $textdomain ) {
+			if ( $ctxt ) {
+				$string = translate_with_gettext_context ( $msgid, $ctxt, $textdomain ) ;
 
+			} else {
+				$string = translate ( $msgid, $textdomain );
+			}
+			$string = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', $string );
+			$string = strip_tags( $string, '<em><strong><br>' );
+			return $string;
+		} else {
+			return '';
+		}
+	}
 
+	/**
+	 * SHORTCODE: display only content if current language
+	 *
+	 * [xili-show-if lang=fr_FR ]contenu de la page boutique multilingue[/xili-show-if]
+	 * [xili-show-if lang=en_us ]content of multilingual eshop[/xili-show-if]
+	 *
+	 * use in lang slug or ISO
+	 * return '' if issues in lang
+	 *
+	 * @since 2.13.3
+	 */
+	function xili_content_if_shortcode ( $atts, $content = null ) {
+		extract(shortcode_atts(array(
+			'lang' => ''
+		), $atts));
+		if ( $lang == 'every' ) return $content;
+		if ( $lang == '' ) return '';
+		$slug = $this->curlang ;
+		if ( $slug ){
+			$language = get_term_by( 'slug', $slug, TAXONAME, ARRAY_A );
+			if ( $language['slug'] == $lang || $language['name'] == $lang ) {
+				return $content;
+			}
+		}
+		return '';
+	}
 
+	/**
+	 * SHORTCODE: return URI of flag in a language
+	 *
+	 * <img src="[xili-flag lang=es_es]" width="16" height="12" class="alignnone" />
+	 *
+	 * use in lang slug
+	 * return '' if issues in lang or flag
+	 *
+	 * @since 2.15
+	 */
+	function xili_multilingual_flag ( $atts, $content = null ) {
+		extract(shortcode_atts(array(
+			'lang' => '',
+			'src' => 0
+		), $atts));
+		if ( $lang == '' ) return '';
+		// search attachement
 
+		$post_id = $this->get_flag_series ( $lang );
+		// return URI
+		if ( $post_id ) {
+			switch ( $src ) {
+				case 1 :
+					return wp_get_attachment_image_src( $post_id ); // array ( url, width, height)
+				case 2 :
+					$desc = wp_get_attachment_image_src( $post_id ); // array ( url, width, height)
+					return ' src="' . $desc[0] . '" width="' . $desc[1] . '" height="' . $desc[2] . '" ' ;
+				default:
+					return wp_get_attachment_url( $post_id );
+			}
+		} else {
+			// search if default value available in theme
+			global $_wp_theme_features;
+			if ( isset ($_wp_theme_features['custom_xili_flag'][0][$lang] ) ) {
+				$url = sprintf($_wp_theme_features['custom_xili_flag'][0][$lang]['path'], get_template_directory_uri(), get_stylesheet_directory_uri());
+				$width = $_wp_theme_features['custom_xili_flag'][0][$lang]['width'];
+				$height = $_wp_theme_features['custom_xili_flag'][0][$lang]['height'];
+				switch ( $src ) {
+					case 1 :
+						return array ( $url, $width, $height);
+					case 2 :
+
+						return ' src="' . $url . '" width="' . $width . '" height="' . $height . '" ' ;
+					default:
+						return $url;
+				}
+			} else {
+				return '';
+			}
+		}
+
+	}
+
+	function get_flag_series ( $lang = '' ) {
+
+		$query = array(
+			'post_type' => 'attachment',
+			'posts_per_page' => -1,
+
+			'meta_query' => array(
+				array(
+					'key' => '_wp_attachment_context',
+					'value' => 'custom_xili_flag' ,
+					'compare' => '='
+				)
+// is for this theme ?
+				),
+			);
+
+		$flags = get_posts( $query ) ;
+
+		$flags_ids = wp_list_pluck( (array) $flags, 'ID' );
+		$flags_ids = array_map( 'absint', $flags_ids );
+
+		$flag_series = array();
+		foreach ( $flags_ids as $flag_id) {
+			$attachment_post_language = get_cur_language( $flag_id, 'slug' );
+			if ( '' != $attachment_post_language ) $flag_series[$attachment_post_language] =  $flag_id;
+		}
+		if ( $lang ) {
+			if ( isset ( $flag_series[$lang] ) ) {
+				return $flag_series[$lang];
+			} else {
+				return '';
+			}
+
+		} else {
+			return $flag_series;
+		}
+	}
+
+	/**
+	 * Insert style for flag in navigation menu
+	 *
+	 * called by action wp_head priority 12
+	 *
+	 * @since 2.15
+	 * results are filterable by hook insert_xili_flag_css_in_header
+	 */
+	function insert_xili_flag_css_in_header () {
+		if ( ! current_theme_supports( 'custom_xili_flag') ) return; // needs add_theme_support ( 'custom_xili_flag' ) if not bundled theme
+		$flag_options = $this->get_xili_flag_options () ;
+		echo '<style type="text/css">' . "\n";
+		if ( $flag_options['menu_with_flag'] == 'with-flag' ) {
+			sprintf ( "/* flag style added by xili-language v. %s */ \n", XILILANGUAGE_VER );
+
+			// common lines
+			$css_ul_nav_menu = ( $flag_options['css_ul_nav_menu'] != '' ) ? $flag_options['css_ul_nav_menu'] . ' ' : '' ;
+			$output = $css_ul_nav_menu . 'li[class*="lang-"]:hover { '. $flag_options['css_li_hover'] .' }' ."\n";
+			$output .= $css_ul_nav_menu . 'li[class*="lang-"] a {'. $flag_options['css_li_a'] .'}' ."\n";
+			$output .= $css_ul_nav_menu . 'li[class*="lang-"] a:hover {'.$flag_options['css_li_a_hover'].'}' ."\n";
+
+			// loop lines / lang
+			foreach ( $this->langs_ids_array as $slug => $id ) {
+				$url = do_shortcode( "[xili-flag lang={$slug}]" ) ;
+				$output .= $css_ul_nav_menu . "li.lang-{$slug} a { background-image: url('{$url}') }\n";
+				$output .= $css_ul_nav_menu . "li.lang-{$slug} a:hover { background-image: url('{$url}') !important;}\n";
+			}
+
+			echo apply_filters ( 'insert_xili_flag_css_in_header', $output, $flag_options, $this->langs_ids_array ) ;
+
+		} else {
+			sprintf ( "/* no flag style added by xili-language v. %s */ \n", XILILANGUAGE_VER );
+		}
+		echo "</style>\n";
+	}
+
+	/**
+	 * called by both side
+	 */
+	function get_xili_flag_options () {
+		return get_option( $this->flag_settings_name, $this->get_default_xili_flag_options() );
+	}
+
+	/**
+	 * default array according bundled themes
+	 * @since 2.15
+	 *
+	 * results are filterable by hook - get_default_xili_flag_options - to be adapted in customized theme
+	 */
+	function get_default_xili_flag_options () {
+		$current_parent_theme = get_option ('template') ; // for child also !
+		$default = array (
+					'menu_with_flag' => '0',
+					'css_ul_nav_menu' => 'ul.nav-menu',
+					'css_li_hover' => 'background-color:#41a62a;',
+					'css_li_a' => 'text-indent:-9999px; width:10px; background:transparent no-repeat center 16px; margin:0;',
+					'css_li_a_hover' => 'background: no-repeat center 17px !important;',
+				);
+
+		switch ( $current_parent_theme ) {
+			case 'twentyten' :
+				$default['css_ul_nav_menu'] = 'ul.menu' ;
+				$default['css_li_hover'] = 'background-color:#333;' ;
+				$default['css_li_a'] = 'text-indent:-9999px; width:24px; background:transparent no-repeat center 16px; padding:0 !important;' ;
+				break;
+			case 'twentyeleven' :
+				$default['css_ul_nav_menu'] = 'ul.menu' ;
+				$default['css_li_hover'] = 'background-color:#efefef;' ;
+				$default['css_li_a'] = 'text-indent:-9999px; width:24px; background:transparent no-repeat center 16px; padding:0 !important;' ;
+				break;
+			case 'twentytwelve' :
+				$default['css_li_hover'] = 'background-color:none;' ;
+				$default['css_li_a'] = 'text-indent:-9999px; width:24px; background:transparent no-repeat center 16px; margin:0;' ;
+				break;
+			case 'twentythirteen' :
+				$default['css_li_hover'] = 'background-color:#ad9065;' ;
+				break;
+			case 'twentyfifteen' :
+				$default['css_li_hover'] = 'background-color:#f5f5f5; background:rgba(255,255,255,0.3);' ; // transparency if possible
+				$default['css_li_a'] = 'text-indent:30px; width:100%; background:transparent no-repeat 0 16px; margin:0;' ;
+				$default['css_li_a_hover'] = 'background: no-repeat 0 17px !important;' ;
+				break;
+			case 'twentyfourteen' :
+			
+			default:
+		}
+		return apply_filters ( 'get_default_xili_flag_options', $default, $current_parent_theme );
+	}
+
+	// used in admin settings but here for easy update content
+	function get_xili_flag_options_description ( ) {
+		return array (
+				'menu_with_flag' => array ( 'title' => __('Menu with flags', 'xili-language'),
+					'description' => __("If checked and if flag images available  for each language in Medias table, navigation menu item will display image instead language name.", "xili-language")
+					. '</br>'. __("If theme contains flags and if these flags are well registered inside args of “custom_xili_flag” theme_support function, a default flag is used for the target language. Marked with *.", "xili-language") ),
+				'css_ul_nav_menu' => array ( 'title' => __('Navigation menu selector', 'xili-language'),
+					'description' => __("The css navigation menu selector (default as in twentyfourteen bundled theme).", "xili-language") ),
+				'css_li_hover' => array ( 'title' => __('li:hover selector', 'xili-language'),
+					'description' => __("The css navigation menu selector when mouse is hover li.", "xili-language") ),
+				'css_li_a' => array ( 'title' => __('a selector', 'xili-language'),
+					'description' => __("The css navigation menu selector (a) where flag is in background.", "xili-language") ),
+				'css_li_a_hover' => array ( 'title' => __('a:hover selector', 'xili-language'),
+					'description' => __("The css navigation menu (a) selector when mouse moves hover).", "xili-language") ),
+			);
+	}
+
+	// when theme activated (after setup)
+	// 2.15.1
+	function bundled_themes_support_flag () {
+		$current_parent_theme = get_option ('template') ;
+		$current_theme = get_option ('stylesheet') ;
+		if ( in_array( $current_parent_theme , array( 'twentyten', 'twentyeleven', 'twentytwelve', 'twentythirteen', 'twentyfifteen' ) ) ) {
+			add_theme_support ( 'custom_xili_flag' ); // same name as used in context of image
+		}
+
+		if ( in_array ( $current_theme, array('twentyfourteen-xili', 'twentyfifteen-xili' ) ) ) {
+			xili_xl_error_log ('*********** bundled_themes_support_flag for '. $current_theme );
+			remove_theme_support ( 'custom_xili_flag' ) ;
+			$args = array();
+			$listlanguages = $this->get_listlanguages();
+
+			foreach ( $listlanguages as $one_language ) {
+				$path_root = get_stylesheet_directory();
+				$path = '%2$s/images/flags/'.$one_language->slug.'.png';
+				if (file_exists( sprintf( $path, '', $path_root ))) {
+					$args[$one_language->slug] = array(
+						'path' => $path,
+						'height'				=> 16,
+						'width'					=> 11
+					);
+				}
+			}
+			// path and size - %2$s = child theme
+			/*
+			'de_de'	=> array(
+						'path' => '%2$s/images/flags/de_de.png',
+						'height'				=> 16,
+						'width'					=> 11),
+
+			*/
+			add_theme_support ( 'custom_xili_flag', $args );
+		}
+	}
+	// called when changing language list - obsolete
+	function update_current_theme_support() {
+		$current_theme = get_option ('stylesheet') ;
+		if ( $current_theme == 'twentyfourteen-xili' ) {
+			remove_theme_support ( 'custom_xili_flag' ) ;
+			$listlanguages = $this->get_listlanguages(true);
+			$args = array();
+			foreach ( $listlanguages as $one_language ) {
+				$args[$one_language->slug] = array(
+						'path' => '%2$s/images/flags/'.$one_language->slug.'.png',
+						'height'				=> 16,
+						'width'					=> 11
+					);
+			}
+
+			add_theme_support ( 'custom_xili_flag', $args );
+		}
+
+	}
 
 } /* **************** end of xili-language class ******************* */
 
@@ -3910,6 +4593,7 @@ for (var i=0; i < this.form.' .QUETAG .'.length ; i++) { if(this.form.'.QUETAG.'
  * called when wp_locale is declared when plugin_loaded
  *
  * @since 2.4
+ * @updated 2.12 - translate() used
  *
  */
 
@@ -3920,8 +4604,9 @@ function xiliml_declare_xl_wp_locale () {
 	 * to work needs that locale datas and translation (a copy of those in core languages) will be in theme's po,mo files
 	 *
 	 * @since 2.4.0
+	 *
 	 */
-	if ( ! class_exists ( 'xl_WP_Locale'  ) ) {
+	if ( ! class_exists ( 'xl_WP_Locale' ) ) {
 	class xl_WP_Locale extends WP_locale {
 
 			function __construct() {
@@ -3933,85 +4618,85 @@ function xiliml_declare_xl_wp_locale () {
 			$theme_domain = the_theme_domain();
 
 			// The Weekdays
-			$this->weekday[0] = /* translators: weekday */ __('Sunday', $theme_domain);
-			$this->weekday[1] = /* translators: weekday */ __('Monday', $theme_domain);
-			$this->weekday[2] = /* translators: weekday */ __('Tuesday', $theme_domain);
-			$this->weekday[3] = /* translators: weekday */ __('Wednesday', $theme_domain);
-			$this->weekday[4] = /* translators: weekday */ __('Thursday', $theme_domain);
-			$this->weekday[5] = /* translators: weekday */ __('Friday', $theme_domain);
-			$this->weekday[6] = /* translators: weekday */ __('Saturday', $theme_domain);
+			$this->weekday[0] = /* translators: weekday */ translate('Sunday', $theme_domain);
+			$this->weekday[1] = /* translators: weekday */ translate('Monday', $theme_domain);
+			$this->weekday[2] = /* translators: weekday */ translate('Tuesday', $theme_domain);
+			$this->weekday[3] = /* translators: weekday */ translate('Wednesday', $theme_domain);
+			$this->weekday[4] = /* translators: weekday */ translate('Thursday', $theme_domain);
+			$this->weekday[5] = /* translators: weekday */ translate('Friday', $theme_domain);
+			$this->weekday[6] = /* translators: weekday */ translate('Saturday', $theme_domain);
 
-			// The first letter of each day.  The _%day%_initial suffix is a hack to make
+			// The first letter of each day. The _%day%_initial suffix is a hack to make
 			// sure the day initials are unique.
-			$this->weekday_initial[__('Sunday', $theme_domain)]    = /* translators: one-letter abbreviation of the weekday */ __('S_Sunday_initial', $theme_domain);
-			$this->weekday_initial[__('Monday', $theme_domain)]    = /* translators: one-letter abbreviation of the weekday */ __('M_Monday_initial', $theme_domain);
-			$this->weekday_initial[__('Tuesday', $theme_domain)]   = /* translators: one-letter abbreviation of the weekday */ __('T_Tuesday_initial', $theme_domain);
-			$this->weekday_initial[__('Wednesday', $theme_domain)] = /* translators: one-letter abbreviation of the weekday */ __('W_Wednesday_initial', $theme_domain);
-			$this->weekday_initial[__('Thursday', $theme_domain)]  = /* translators: one-letter abbreviation of the weekday */ __('T_Thursday_initial', $theme_domain);
-			$this->weekday_initial[__('Friday', $theme_domain)]    = /* translators: one-letter abbreviation of the weekday */ __('F_Friday_initial', $theme_domain);
-			$this->weekday_initial[__('Saturday', $theme_domain)]  = /* translators: one-letter abbreviation of the weekday */ __('S_Saturday_initial', $theme_domain);
+			$this->weekday_initial[translate('Sunday', $theme_domain)]		= /* translators: one-letter abbreviation of the weekday */ translate('S_Sunday_initial', $theme_domain);
+			$this->weekday_initial[translate('Monday', $theme_domain)]		= /* translators: one-letter abbreviation of the weekday */ translate('M_Monday_initial', $theme_domain);
+			$this->weekday_initial[translate('Tuesday', $theme_domain)]	= /* translators: one-letter abbreviation of the weekday */ translate('T_Tuesday_initial', $theme_domain);
+			$this->weekday_initial[translate('Wednesday', $theme_domain)]	= /* translators: one-letter abbreviation of the weekday */ translate('W_Wednesday_initial', $theme_domain);
+			$this->weekday_initial[translate('Thursday', $theme_domain)]	= /* translators: one-letter abbreviation of the weekday */ translate('T_Thursday_initial', $theme_domain);
+			$this->weekday_initial[translate('Friday', $theme_domain)]		= /* translators: one-letter abbreviation of the weekday */ translate('F_Friday_initial', $theme_domain);
+			$this->weekday_initial[translate('Saturday', $theme_domain)]	= /* translators: one-letter abbreviation of the weekday */ translate('S_Saturday_initial', $theme_domain);
 
 			foreach ($this->weekday_initial as $weekday_ => $weekday_initial_) {
 				$this->weekday_initial[$weekday_] = preg_replace('/_.+_initial$/', '', $weekday_initial_);
 			}
 
 			// Abbreviations for each day.
-			$this->weekday_abbrev[__('Sunday', $theme_domain)]    = /* translators: three-letter abbreviation of the weekday */ __('Sun', $theme_domain);
-			$this->weekday_abbrev[__('Monday', $theme_domain)]    = /* translators: three-letter abbreviation of the weekday */ __('Mon', $theme_domain);
-			$this->weekday_abbrev[__('Tuesday', $theme_domain)]   = /* translators: three-letter abbreviation of the weekday */ __('Tue', $theme_domain);
-			$this->weekday_abbrev[__('Wednesday', $theme_domain)] = /* translators: three-letter abbreviation of the weekday */ __('Wed', $theme_domain);
-			$this->weekday_abbrev[__('Thursday', $theme_domain)]  = /* translators: three-letter abbreviation of the weekday */ __('Thu', $theme_domain);
-			$this->weekday_abbrev[__('Friday', $theme_domain)]    = /* translators: three-letter abbreviation of the weekday */ __('Fri', $theme_domain);
-			$this->weekday_abbrev[__('Saturday', $theme_domain)]  = /* translators: three-letter abbreviation of the weekday */ __('Sat', $theme_domain);
+			$this->weekday_abbrev[translate('Sunday', $theme_domain)]		= /* translators: three-letter abbreviation of the weekday */ translate('Sun', $theme_domain);
+			$this->weekday_abbrev[translate('Monday', $theme_domain)]		= /* translators: three-letter abbreviation of the weekday */ translate('Mon', $theme_domain);
+			$this->weekday_abbrev[translate('Tuesday', $theme_domain)]		= /* translators: three-letter abbreviation of the weekday */ translate('Tue', $theme_domain);
+			$this->weekday_abbrev[translate('Wednesday', $theme_domain)]	= /* translators: three-letter abbreviation of the weekday */ translate('Wed', $theme_domain);
+			$this->weekday_abbrev[translate('Thursday', $theme_domain)]	= /* translators: three-letter abbreviation of the weekday */ translate('Thu', $theme_domain);
+			$this->weekday_abbrev[translate('Friday', $theme_domain)]		= /* translators: three-letter abbreviation of the weekday */ translate('Fri', $theme_domain);
+			$this->weekday_abbrev[translate('Saturday', $theme_domain)]	= /* translators: three-letter abbreviation of the weekday */ translate('Sat', $theme_domain);
 
 			// The Months
-			$this->month['01'] = /* translators: month name */ __('January', $theme_domain);
-			$this->month['02'] = /* translators: month name */ __('February', $theme_domain);
-			$this->month['03'] = /* translators: month name */ __('March', $theme_domain);
-			$this->month['04'] = /* translators: month name */ __('April', $theme_domain);
-			$this->month['05'] = /* translators: month name */ __('May', $theme_domain);
-			$this->month['06'] = /* translators: month name */ __('June', $theme_domain);
-			$this->month['07'] = /* translators: month name */ __('July', $theme_domain);
-			$this->month['08'] = /* translators: month name */ __('August', $theme_domain);
-			$this->month['09'] = /* translators: month name */ __('September', $theme_domain);
-			$this->month['10'] = /* translators: month name */ __('October', $theme_domain);
-			$this->month['11'] = /* translators: month name */ __('November', $theme_domain);
-			$this->month['12'] = /* translators: month name */ __('December', $theme_domain );
+			$this->month['01'] = /* translators: month name */ translate('January', $theme_domain);
+			$this->month['02'] = /* translators: month name */ translate('February', $theme_domain);
+			$this->month['03'] = /* translators: month name */ translate('March', $theme_domain);
+			$this->month['04'] = /* translators: month name */ translate('April', $theme_domain);
+			$this->month['05'] = /* translators: month name */ translate('May', $theme_domain);
+			$this->month['06'] = /* translators: month name */ translate('June', $theme_domain);
+			$this->month['07'] = /* translators: month name */ translate('July', $theme_domain);
+			$this->month['08'] = /* translators: month name */ translate('August', $theme_domain);
+			$this->month['09'] = /* translators: month name */ translate('September', $theme_domain);
+			$this->month['10'] = /* translators: month name */ translate('October', $theme_domain);
+			$this->month['11'] = /* translators: month name */ translate('November', $theme_domain);
+			$this->month['12'] = /* translators: month name */ translate('December', $theme_domain );
 
 			// Abbreviations for each month. Uses the same hack as above to get around the
 			// 'May' duplication.
-			$this->month_abbrev[__('January', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Jan_January_abbreviation', $theme_domain);
-			$this->month_abbrev[__('February', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Feb_February_abbreviation', $theme_domain);
-			$this->month_abbrev[__('March', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Mar_March_abbreviation', $theme_domain);
-			$this->month_abbrev[__('April', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Apr_April_abbreviation', $theme_domain);
-			$this->month_abbrev[__('May', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('May_May_abbreviation', $theme_domain);
-			$this->month_abbrev[__('June', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Jun_June_abbreviation', $theme_domain);
-			$this->month_abbrev[__('July', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Jul_July_abbreviation', $theme_domain);
-			$this->month_abbrev[__('August', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Aug_August_abbreviation', $theme_domain);
-			$this->month_abbrev[__('September', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Sep_September_abbreviation', $theme_domain);
-			$this->month_abbrev[__('October', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Oct_October_abbreviation', $theme_domain);
-			$this->month_abbrev[__('November', $theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Nov_November_abbreviation', $theme_domain);
-			$this->month_abbrev[__('December',$theme_domain)] = /* translators: three-letter abbreviation of the month */ __('Dec_December_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('January', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Jan_January_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('February', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Feb_February_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('March', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Mar_March_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('April', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Apr_April_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('May', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('May_May_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('June', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Jun_June_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('July', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Jul_July_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('August', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Aug_August_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('September', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Sep_September_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('October', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Oct_October_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('November', $theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Nov_November_abbreviation', $theme_domain);
+			$this->month_abbrev[translate('December',$theme_domain)] = /* translators: three-letter abbreviation of the month */ translate('Dec_December_abbreviation', $theme_domain);
 
 			foreach ($this->month_abbrev as $month_ => $month_abbrev_) {
 				$this->month_abbrev[$month_] = preg_replace('/_.+_abbreviation$/', '', $month_abbrev_);
 			}
 
 			// The Meridiems
-			$this->meridiem['am'] = __('am', $theme_domain);
-			$this->meridiem['pm'] = __('pm', $theme_domain);
-			$this->meridiem['AM'] = __('AM', $theme_domain);
-			$this->meridiem['PM'] = __('PM', $theme_domain);
+			$this->meridiem['am'] = translate('am', $theme_domain);
+			$this->meridiem['pm'] = translate('pm', $theme_domain);
+			$this->meridiem['AM'] = translate('AM', $theme_domain);
+			$this->meridiem['PM'] = translate('PM', $theme_domain);
 
 			// Numbers formatting
 			// See http://php.net/number_format
 
 			/* translators: $thousands_sep argument for http://php.net/number_format, default is , */
-			$trans = __('number_format_thousands_sep', $theme_domain);
+			$trans = translate('number_format_thousands_sep', $theme_domain);
 			$this->number_format['thousands_sep'] = ('number_format_thousands_sep' == $trans) ? ',' : $trans;
 
 			/* translators: $dec_point argument for http://php.net/number_format, default is . */
-			$trans = __('number_format_decimal_point', $theme_domain);
+			$trans = translate('number_format_decimal_point', $theme_domain);
 			$this->number_format['decimal_point'] = ('number_format_decimal_point' == $trans) ? '.' : $trans;
 
 			// test version // 2.7.1
@@ -4027,7 +4712,7 @@ function xiliml_declare_xl_wp_locale () {
 				if ( isset( $GLOBALS['text_direction'] ) )
 					$this->text_direction = $GLOBALS['text_direction'];
 				/* translators: 'rtl' or 'ltr'. This sets the text direction for WordPress. */
-				elseif ( 'rtl' == _x( 'ltr', 'text direction', $theme_domain ) )
+				elseif ( 'rtl' == translate_with_gettext_context( 'ltr', 'text direction', $theme_domain ) )
 					$this->text_direction = 'rtl';
 
 			}
@@ -4097,7 +4782,7 @@ function update_term_order ( $object_id,$term_taxonomy_id,$term_order ) {
 function get_term_and_order ( $term_id, $group_ttid, $taxonomy ) {
 	global $wpdb;
 	$term = get_term($term_id, $taxonomy, OBJECT, 'edit');
-	$term->term_order = $wpdb->get_var( "SELECT term_order FROM $wpdb->term_relationships WHERE object_id =  $term_id AND term_taxonomy_id = $group_ttid " );
+	$term->term_order = $wpdb->get_var( "SELECT term_order FROM $wpdb->term_relationships WHERE object_id = $term_id AND term_taxonomy_id = $group_ttid " );
 	return $term;
 }
 
@@ -4152,7 +4837,7 @@ function xili_curlang( $by = 'slug' ) {
  *
  * @since 2.11
  * use for other function elsewhere
- * @param "" for  undefined, slug of tested language alone or an array list
+ * @param "" for undefined, slug of tested language alone or an array list
  * @return true or false
  */
 function is_xili_curlang( $lang = false ) {
@@ -4171,6 +4856,39 @@ function is_xili_curlang( $lang = false ) {
 }
 
 /**
+ * Return field of a language
+ * <?php echo xili_get_language_field('alias', 'fr_FR'); ?>
+ *
+ * @since 2.12.0
+ * @param field as in term of in settings - name ISO (fr_FR) or slug (fr_fr)
+ * @return WP_error or field
+ */
+function xili_get_language_field ( $field, $lang_ISOorslug ) {
+	global $xili_language;
+	$res = term_exists( $lang_ISOorslug, TAXONAME );
+	if ( $res ) {
+		if ( empty( $field ) ) $field = 'slug';
+		$field = strtolower ($field);
+		if ( $field == 'iso') $field = 'name';
+		if ( $field == 'full name') $field = 'description';
+		$language = get_term( $res['term_id'], TAXONAME, ARRAY_A, 'edit' );
+		if ( $language ) {
+			if ( in_array ( $field, array('name', 'description', 'count' ) ) ){
+				return $language[$field];
+			}
+			if ( in_array ( $field, array( 'alias', 'charset', 'hidden' ) ) ){
+				$val = ( isset($xili_language->xili_settings['lang_features'][$language['slug']][$field]) ) ? $xili_language->xili_settings['lang_features'][$language['slug']][$field] : '';
+				return $val;
+			}
+			if ( $field == 'direction' ) return $xili_language->curlang_dir;
+		}
+	}
+	return new WP_Error( 'language-error', __( 'Language or taxonomy language not available', 'xili-language' ) );
+}
+
+
+
+/**
  * Return the current language and dir of theme.
  *
  * @since 0.9.9
@@ -4182,6 +4900,11 @@ function the_cur_lang_dir() {
 	global $xili_language;
 	return array( QUETAG => $xili_language->curlang, 'direction'=>$xili_language->curlang_dir );
 }
+
+
+
+
+
 
 /**
  * Return the current group of languages
@@ -4228,10 +4951,10 @@ function the_xili_local_time( $format='%B %d, %Y',$time = null ) {
 	$curlang = ( strlen($curslug) == 5 ) ? substr($curslug,0,3).strtoupper(substr($curslug,-2)) : $curslug ;
 	setlocale(LC_TIME, $curlang); /* work if server is ready */
 	$charset = ( $xili_language->xili_settings['lang_features'][$curslug]['charset'] != '' ) ? $xili_language->xili_settings['lang_features'][$curslug]['charset'] : "" ; // 1.8.9.1
-	if ( "" != $charset  ) {
-	  return htmlentities( strftime(__( $format, the_theme_domain() ),$time), ENT_COMPAT, $charset ); /* ,'UTF-8' entities for some server */
+	if ( "" != $charset ) {
+		return htmlentities( strftime(__( $format, the_theme_domain() ),$time), ENT_COMPAT, $charset ); /* ,'UTF-8' entities for some server */
 	} else {
-	 	return htmlentities( strftime(__( $format, the_theme_domain() ),$time), ENT_COMPAT );
+		return htmlentities( strftime(__( $format, the_theme_domain() ),$time), ENT_COMPAT );
 	}
 }
 
@@ -4262,10 +4985,10 @@ function the_xili_wp_local_time( $wp_format='F j, Y', $time = null ) {
 		$format = xiliml_php2loc_time_format_translator (__($wp_format, the_theme_domain())); /* translated by theme mo*/
 
 		$charset = ( $xili_language->xili_settings['lang_features'][$curslug]['charset'] != '' ) ? $xili_language->xili_settings['lang_features'][$curslug]['charset'] : "" ; // 1.8.9.1
-		if ( "" != $charset  ) {
-			return htmlentities(strftime($format, $time),ENT_COMPAT, $charset  ); /* ,'UTF-8' entities for some server - ja char */
+		if ( "" != $charset ) {
+			return htmlentities(strftime($format, $time),ENT_COMPAT, $charset ); /* ,'UTF-8' entities for some server - ja char */
 		} else {
-			return htmlentities(strftime($format, $time),ENT_COMPAT  );
+			return htmlentities(strftime($format, $time),ENT_COMPAT );
 		}
 	}
 }
@@ -4288,9 +5011,9 @@ function xiliml_php2loc_time_format_translator ( $phpformat = 'm/d/Y H:i' ) {
 	$locformchar = array('%p','%P','%a','%A','%l','%d','%Z','%e','%j','%Z','%U','%w','%W','%b','%B','%I', '%h', '%m','%y','%Y','%H','%l','%M', '','%S','%z','%m');
 	/* doc here: http://fr.php.net/manual/en/function.strftime.php */
 
-   if ('' == $phpformat) $phpformat = 'm/d/Y H:i';
-   // use to detect escape char that illustrate date or hour... \h or \m
-   	$ars = explode('\\', $phpformat ); $i=0;
+	if ('' == $phpformat) $phpformat = 'm/d/Y H:i';
+	// use to detect escape char that illustrate date or hour... \h or \m
+	$ars = explode('\\', $phpformat ); $i=0;
 	if ($ars[0] == $phpformat) {
 		$locform = str_replace($phpformchar, $locformchar,$phpformat);
 	} else {
@@ -4303,7 +5026,7 @@ function xiliml_php2loc_time_format_translator ( $phpformat = 'm/d/Y H:i' ) {
 		}
 
 	}
-   	return $locform ;
+	return $locform ;
 }
 
 /**
@@ -4342,8 +5065,8 @@ function get_cur_post_lang_dir( $post_ID ) {
  * @param $force to avoid buffer
  */
  function xili_get_listlanguages( $force = false ) {
- 	global $xili_language;
- 	return $xili_language->get_listlanguages( $force );
+	global $xili_language;
+	return $xili_language->get_listlanguages( $force );
  }
 
 /**
@@ -4425,9 +5148,9 @@ function xiliml_get_category_link( $catid = 0 ) {
 				global $wp_query;
 				$catid = $wp_query->query_vars['cat'];
 			}
-			remove_filter('category_link', array ( $xili_language, 'xiliml_link_append_lang') );
-				$catcur = get_category_link($catid);
-			add_filter('category_link', array ( $xili_language, 'xiliml_link_append_lang' ) );
+			remove_filter('term_link', array ( $xili_language, 'xiliml_term_link_append_lang') );
+				$catcur = get_category_link( $catid );
+			add_filter('term_link', array ( $xili_language, 'xiliml_term_link_append_lang' ), 10, 3 );
 	return $catcur;
 }
 
@@ -4584,7 +5307,7 @@ function xl_get_linked_post_in ( $fromID, $lang, $info = 'id' ) {
 
 	if ( $language !== false ) {
 		$otherpost = get_post_meta( $fromID, QUETAG.'-'.$language->slug, true ); // will be soon changed
-		if ( $info == 'permalinknav') return  $xili_language ->link_of_linked_post ( $fromID, $language->slug );
+		if ( $info == 'permalinknav') return $xili_language ->link_of_linked_post ( $fromID, $language->slug );
 
 		if ( $otherpost ) {
 			switch ( $info ) {
@@ -4593,13 +5316,13 @@ function xl_get_linked_post_in ( $fromID, $lang, $info = 'id' ) {
 					break;
 				case 'link';
 					$post = get_post($otherpost);
-			        if ( isset($post->post_type) ){
-			         	if ( 'post' == $post->post_type ) {
+					if ( isset($post->post_type) ){
+						if ( 'post' == $post->post_type ) {
 							$output = home_url('?p=' . $otherpost);
-			         	} elseif ( 'post' == $post->post_type ) {
-			         		$output = home_url('?page_id=' . $otherpost);
-			         	}
-			        }
+						} elseif ( 'post' == $post->post_type ) {
+							$output = home_url('?page_id=' . $otherpost);
+						}
+					}
 					break;
 				case 'permalink';
 					$output = get_permalink( $otherpost );
@@ -4647,8 +5370,8 @@ function xili_nav_menu_args ( $args ) {
 
 					if ( empty( $menu_items ) ) {
 
-						$menu_id = wp_update_nav_menu_item ( $menu->term_id, 0, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#")  );
-						$menu_id = wp_update_nav_menu_item ( $menu->term_id, $menu_id, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#dummy-link", 'menu-item-attr-title' => __('delete if you add manually another menu item', 'xili-language' ) )  ); // wp-includes/nav-menu.php
+						$menu_id = wp_update_nav_menu_item ( $menu->term_id, 0, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#") );
+						$menu_id = wp_update_nav_menu_item ( $menu->term_id, $menu_id, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#dummy-link", 'menu-item-attr-title' => __('delete if you add manually another menu item', 'xili-language' ) ) ); // wp-includes/nav-menu.php
 
 					}
 				}
@@ -4669,8 +5392,8 @@ function xili_nav_menu_args ( $args ) {
 
 							if ( empty( $menu_items ) ) {
 
-								$menu_id = wp_update_nav_menu_item ( $menu->term_id, 0, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#")  );
-								$menu_id = wp_update_nav_menu_item ( $menu->term_id, $menu_id, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#dummy-link", 'menu-item-attr-title' => __('delete if you add manually another menu item', 'xili-language' ) )  );
+								$menu_id = wp_update_nav_menu_item ( $menu->term_id, 0, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#") );
+								$menu_id = wp_update_nav_menu_item ( $menu->term_id, $menu_id, array( 'menu-item-title' => 'xili-language un-visible dummy-menu-item', 'menu-item-url' => "#dummy-link", 'menu-item-attr-title' => __('delete if you add manually another menu item', 'xili-language' ) ) );
 
 
 							}
@@ -4691,7 +5414,7 @@ function xili_nav_menu_args ( $args ) {
  * @updated 1.7.1 - add optionally wp_page_list result
  * @updated 1.8.1 - choose good menu location
  * @updated 1.8.9 - add filter (example: add_filter ('xili_nav_lang_list', 'my_xili_nav_lang_list', 10, 3);)
- *					 and class for separator  ( example: li.menu-separator a {display:none;})
+ *					and class for separator ( example: li.menu-separator a {display:none;})
  *
  * @updated 2.1.0 - for multiple navmenu locations - CAUTION new filter: xili_nav_lang_lists (with s at end)
  * @updated 2.8.3 - for empty items (hack args) wp 3.5
@@ -4700,9 +5423,9 @@ function xili_nav_menu_args ( $args ) {
 function xili_nav_lang_list( $items, $args ) {
 	global $xili_language;
 
-	$preview_options =  $xili_language->get_xili_language_options(); // to obtain previewable params
+	$preview_options = $xili_language->get_xili_language_options(); // to obtain previewable params
 
-	$li_separator = ( '' != $preview_options['nav_menu_separator'] ) ? '<li class="menu-item menu-separator" ><a>'.$preview_options['nav_menu_separator'].'</a></li>' : '';  // 2.8.3
+	$li_separator = ( '' != $preview_options['nav_menu_separator'] ) ? '<li class="menu-item menu-separator" ><a>'.$preview_options['nav_menu_separator'].'</a></li>' : '';	// 2.8.3
 
 	if ( 0 != strpos( $items, '>xili-language un-visible dummy-menu-item<' )) {
 
@@ -4715,7 +5438,7 @@ function xili_nav_lang_list( $items, $args ) {
 		if ( isset ( $preview_options['navmenu_check_options'] ) ) {
 			$navmenu_check_options = $preview_options['navmenu_check_options'];
 
-			if ( has_filter( 'xili_nav_lang_lists' ) ) return apply_filters ( 'xili_nav_lang_lists',  $items, $args, $navmenu_check_options );
+			if ( has_filter( 'xili_nav_lang_lists' ) ) return apply_filters ( 'xili_nav_lang_lists', $items, $args, $navmenu_check_options );
 
 			if ( isset ( $navmenu_check_options[$args->theme_location] ) && $navmenu_check_options[$args->theme_location]['navenable'] == 'enable' ) {
 
@@ -4723,7 +5446,7 @@ function xili_nav_lang_list( $items, $args ) {
 
 				$end = xili_language_list( '<li>', '</li>', $navmenu, false, true ) ; // don't display hidden languages
 
-		   		return $items. $li_separator .$end; // class for display none...
+				return $items. $li_separator .$end; // class for display none...
 
 			} else {
 				return $items;
@@ -4731,12 +5454,12 @@ function xili_nav_lang_list( $items, $args ) {
 
 		} else { // if settings not updated since updated by admin user
 			$navmenu_check_option = $xili_language->xili_settings['navmenu_check_option'];
-			if ( has_filter( 'xili_nav_lang_list' ) ) return apply_filters ( 'xili_nav_lang_list',  $items, $args, $navmenu_check_option );
-			if ( $args->theme_location  ==  $navmenu_check_option ) {
+			if ( has_filter( 'xili_nav_lang_list' ) ) return apply_filters ( 'xili_nav_lang_list', $items, $args, $navmenu_check_option );
+			if ( $args->theme_location == $navmenu_check_option ) {
 
 				$end = xili_language_list( '<li>', '</li>', 'navmenu', false, true ) ; // don't display hidden languages 1.8.9.1
 
-	   			return $items. $li_separator .$end; // class for display none... 1.8.9 no ID for instantiations
+				return $items. $li_separator .$end; // class for display none... 1.8.9 no ID for instantiations
 
 			} else {
 				return $items;
@@ -4761,9 +5484,9 @@ function xili_nav_page_list( $items, $args ) {
 	if ( isset ($xili_language->xili_settings['array_navmenu_check_option_page'] ) && $xili_language->xili_settings['array_navmenu_check_option_page'] != array() ) {
 		$array_navmenu_check_option_page = $xili_language->xili_settings['array_navmenu_check_option_page'];
 
-		if ( has_filter( 'xili_nav_page_list_array' ) ) return apply_filters ( 'xili_nav_page_list_array',  $items, $args, $array_navmenu_check_option_page );
+		if ( has_filter( 'xili_nav_page_list_array' ) ) return apply_filters ( 'xili_nav_page_list_array', $items, $args, $array_navmenu_check_option_page );
 
-		$location_keys = array_keys( $array_navmenu_check_option_page  );
+		$location_keys = array_keys( $array_navmenu_check_option_page );
 
 		if ( in_array( $args->theme_location, $location_keys ) && $array_navmenu_check_option_page[$args->theme_location]['enable'] == 'enable' ) {
 			if ( 0 != strpos( $items, '>xili-language un-visible dummy-menu-item<' )) {
@@ -4775,12 +5498,12 @@ function xili_nav_page_list( $items, $args ) {
 			$pagelist = '';
 			$pagelist_args = $array_navmenu_check_option_page[$args->theme_location]['args'].'&';
 		// sub-selection
-			add_filter ( 'page_link', 'xili_nav_page_link_insertion_fixe' ,10, 3  ); // 2.8.5
+			add_filter ( 'page_link', 'xili_nav_page_link_insertion_fixe' ,10, 3 ); // 2.8.5
 			$pagelist = wp_list_pages( $pagelist_args . 'title_li=&echo=0&' . QUETAG . '=' . $xili_language->curlang );
 			remove_filter ( 'page_link', 'xili_nav_page_link_insertion_fixe');
 
 
-   			return $items.$pagelist;
+			return $items.$pagelist;
 		} else {
 			return $items;
 		}
@@ -4800,10 +5523,10 @@ function xili_nav_page_list( $items, $args ) {
  */
 function xili_nav_page_link_insertion_fixe ( $link, $post_id, $sample ) {
 	global $xili_language;
-	$front_page_id = $xili_language->get_option_wo_xili ('page_on_front');
+	//$front_page_id = $xili_language->get_option_wo_xili ('page_on_front');
 	$list_pages_check_option = $xili_language->xili_settings['list_pages_check_option'];
 	if ( $xili_language->show_page_on_front && $list_pages_check_option == 'fixe' && in_array( $post_id , $xili_language->show_page_on_front_array ) ) {
-		$post_id = (int) $post_id;  // issue with 3.4.2
+		$post_id = (int) $post_id;	// issue with 3.4.2
 		$post = get_post( $post_id );
 		$link = _get_page_link( $post, false, $sample );
 	}
@@ -4820,22 +5543,22 @@ function xili_nav_page_link_insertion_fixe ( $link, $post_id, $sample ) {
 function xili_nav_page_home_item( $item_output, $item, $depth, $args ) {
 	global $xili_language;
 	$homemenu_check_option = $xili_language->xili_settings['home_item_nav_menu'];
-	if ( has_filter( 'xili_nav_page_home_item' ) ) return apply_filters ( 'xili_nav_page_home_item',  $item_output, $item, $depth, $args, $homemenu_check_option ); // fixed 2.8
+	if ( has_filter( 'xili_nav_page_home_item' ) ) return apply_filters ( 'xili_nav_page_home_item', $item_output, $item, $depth, $args, $homemenu_check_option ); // fixed 2.8
 
-	if ( $item->url == get_option('siteurl').'/'  ) { // page or list
+	if ( $item->url == get_option('siteurl').'/' ) { // page or list
 		$curlang = $xili_language->curlang ;
 
 		if ( $xili_language->lang_perma ) { // 2.9.22
 			$currenturl = get_option('siteurl').'/%lang%/';
 		} else {
-	 		$currenturl = get_option('siteurl').'/?'.QUETAG."=";
+			$currenturl = get_option('siteurl').'/?'.QUETAG."=";
 		}
 		$link = ( $xili_language->lang_perma ) ? str_replace ( '%lang%', $xili_language->lang_slug_qv_trans ( $curlang ), $currenturl ) : $currenturl.$curlang ;
 
-		$attributes  = ! empty( $item->attr_title ) ? ' title="'  . __( esc_attr( $item->attr_title ), $xili_language->thetextdomain ) .'"' : ''; //
-		$attributes .= ! empty( $item->target )     ? ' target="' . esc_attr( $item->target     ) .'"' : '';
-		$attributes .= ! empty( $item->xfn )        ? ' rel="'    . esc_attr( $item->xfn        ) .'"' : '';
-		$attributes .= ! empty( $item->url )        ? ' href="'   . esc_attr( $link ) .'"' : ''; // 2.9.22
+		$attributes  = ! empty( $item->attr_title ) ? ' title="'	. __( esc_attr( $item->attr_title ), $xili_language->thetextdomain ) .'"' : ''; //
+		$attributes .= ! empty( $item->target )		? ' target="'	. esc_attr( $item->target ) .'"' : '';
+		$attributes .= ! empty( $item->xfn )		? ' rel="'		. esc_attr( $item->xfn ) .'"' : '';
+		$attributes .= ! empty( $item->url )		? ' href="'		. esc_attr( $link ) .'"' : ''; // 2.9.22
 
 		$item_output = $args->before;
 		$item_output .= '<a'. $attributes .'>';
@@ -4843,7 +5566,7 @@ function xili_nav_page_home_item( $item_output, $item, $depth, $args ) {
 		$item_output .= '</a>';
 		$item_output .= $args->after;
 		return $item_output;
-   	} else {
+	} else {
 		return $item_output;
 	}
 }
@@ -4881,7 +5604,7 @@ function ex_pages_by_lang ( $pages, $r ) {
 		}
 		return $resultingpages;
 	} else {
-	 	return $pages;
+		return $pages;
 	}
 }
 add_filter('get_pages','ex_pages_by_lang',10,2);
@@ -4890,7 +5613,7 @@ add_filter('get_pages','ex_pages_by_lang',10,2);
  * functions to change and restore loop's query tag
  * (useful for sidebar widget - see functions table)
  * @since 1.3.0
- * @param  lang to modify query_tag -
+ * @param lang to modify query_tag -
  *
  */
 function xiliml_force_loop_lang ( $lang_query_tag ){
@@ -4940,7 +5663,7 @@ function xiliml_get_the_translated_time( $thetime, $format = '' ) {
 	} else {
 		//return $thetime; // new mode wp_locale ;
 		$curslug = $xili_language->curlang;
-		if ( $xili_language->xili_settings['lang_features'][$curslug]['charset'] == 'no_locale' ) {  // KH or HU
+		if ( $xili_language->xili_settings['lang_features'][$curslug]['charset'] == 'no_locale' ) {	// KH or HU
 			if ( function_exists ( 'xili_translate_date' ) )
 				return xili_translate_date ( $curslug, $thetime );
 			else
@@ -4975,7 +5698,7 @@ function xiliml_get_translated_date( $thedate, $format = '' ) {
 		return the_xili_wp_local_time( $theformat, strtotime(xiliml_get_the_date('m/d/Y H:i')));
 	} else {
 		$curslug = $xili_language->curlang;
-		if ( $xili_language->xili_settings['lang_features'][$curslug]['charset'] == 'no_locale' ) {  // KH or HU
+		if ( $xili_language->xili_settings['lang_features'][$curslug]['charset'] == 'no_locale' ) {	// KH or HU
 			if ( function_exists ( 'xili_translate_date' ) )
 				return xili_translate_date ( $curslug, $thedate );
 			else
@@ -5010,9 +5733,9 @@ function xiliml_get_the_date( $d = '' ) {
  * filter for template tag: get_comment_date()
  */
 function xiliml3_comment_date( $comment_time, $format = '' ) {
-  $theformat = ( ''== $format ) ? get_option( 'date_format' ) : $format ;
-  return the_xili_wp_local_time( $theformat, strtotime(get_comment_time ( 'm/d/Y H:i' ) ) );
-  /* impossible to use get_comment_date as it is itself filtered*/
+	$theformat = ( ''== $format ) ? get_option( 'date_format' ) : $format ;
+	return the_xili_wp_local_time( $theformat, strtotime(get_comment_time ( 'm/d/Y H:i' ) ) );
+	/* impossible to use get_comment_date as it is itself filtered*/
 }
 if ( !is_admin() ) {
 	add_filter( 'get_comment_date', 'xiliml3_comment_date',10 ,2 );
@@ -5029,7 +5752,7 @@ function xili_language_trans_slug_qv ( $lang_slug ) {
 	if ( isset ( $_POST['language_alias'] ) )
 		$xili_language->xili_settings = get_option('xili_language_settings'); // need update !
 
-	$short = ( isset ( $xili_language->xili_settings['lang_features'][$lang_slug]['alias'] ) ) ?  $xili_language->xili_settings['lang_features'][$lang_slug]['alias'] : $lang_slug ;
+	$short = ( isset ( $xili_language->xili_settings['lang_features'][$lang_slug]['alias'] ) ) ? $xili_language->xili_settings['lang_features'][$lang_slug]['alias'] : $lang_slug ;
 
 	return $short;
 }
@@ -5056,7 +5779,7 @@ function xili_language_start () {
 	} else {
 
 		// new sub-folder since 2.6
-	    require_once ( plugin_dir_path( __FILE__ ) . 'xili-includes/xili-language-widgets.php' );
+		require_once ( plugin_dir_path( __FILE__ ) . 'xili-includes/xili-language-widgets.php' );
 
 		/**
 	 	 * instantiation of xili_language class
@@ -5072,7 +5795,7 @@ function xili_language_start () {
 		$xili_language = new xili_language( false , false );
 
 		if ( is_admin() ) {
-			$plugin_path = dirname(__FILE__) ;
+			$plugin_path = dirname(__FILE__) ; // w/o / at end
 			require( $plugin_path . '/xili-includes/xl-class-admin.php' );
 			$xili_language_admin = new xili_language_admin( $xili_language );
 		}
@@ -5116,11 +5839,12 @@ function xili_jetpack_lang_init ( ) {
 }
 
 function xili_jetpack_lang_reload ( $locale = 'en_US', $domain = 'default' ) {
-
-	if ( $domain == 'xili-language' && class_exists ( 'jetpack' ) )  {  // because plugin jetpack domain not filterable
+	global $xili_language;
+	if ( $domain == 'xili-language' && class_exists ( 'jetpack' ) ) { // because plugin jetpack domain not filterable
 		$locale = get_user_option( 'user_locale' );
 		if ( empty( $locale ) ) {
-			$locale = ( defined( 'WPLANG' ) ) ? WPLANG : 'en_US';
+			$wplang = $xili_language->get_WPLANG();
+			$locale = ( '' != $wplang  ) ? $wplang : 'en_US';
 
 			if ( is_multisite() ) {
 				if ( defined( 'WP_INSTALLING' ) || ( false === $ms_locale = get_option( 'WPLANG' ) ) )
@@ -5145,7 +5869,7 @@ function xili_jetpack_disable_featured () {
 
 	if ( $xili_language->xili_settings['enable_fc_theme_class'] == 'enable' && ! class_exists( 'Featured_Content' ) && 'plugins.php' !== $GLOBALS['pagenow'] ) {
 		if ( file_exists( get_stylesheet_directory() . '/inc/featured-content.php' ) ) {
-		 	require get_stylesheet_directory() . '/inc/featured-content.php'; // this one will disable others
+			require get_stylesheet_directory() . '/inc/featured-content.php'; // this one will disable others
 		}
 	}
 }
@@ -5160,9 +5884,9 @@ if ( class_exists ( 'jetpack' ) ) { // inited by init filter but without modules
 /**
  * @since 2.8.3 - XILILANGUAGE_DEBUG on top
  */
-function xili_xl_error_log ($content = '') {
+function xili_xl_error_log ( $content = '' ) {
 
-	if ( defined ('XILILANGUAGE_DEBUG') &&  XILILANGUAGE_DEBUG == true && defined ('WP_DEBUG') && WP_DEBUG == true && $content !='' ) error_log ( $content );
+	if ( defined ('XILILANGUAGE_DEBUG') && XILILANGUAGE_DEBUG == true && defined ('WP_DEBUG') && WP_DEBUG == true && $content !='' ) error_log ( 'XL' . $content );
 
 }
 

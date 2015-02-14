@@ -47,8 +47,9 @@ var findPosts;
 			lang = $('#affected').val();
 			linked = $('input[name="found_post_id"]:checked').val();
 			$('#xili_language_lang-'+lang).val( linked );
-			$('#find-posts').draggable('destroy').hide();
-			$( '.ui-find-overlay' ).hide();
+			$('#find-posts-response').html('');
+			$('#find-posts').hide();
+			$( '.ui-find-overlay' ).hide(); // same in close to avoid resave post - only fill
 
 		},
 
@@ -88,6 +89,8 @@ var findPosts;
 			if ( ! $( '#find-posts-response input[type="radio"]:checked' ).length ) {
 				event.preventDefault();
 			}
+		    // no resave only fill input...
+		    event.preventDefault();
 			findPosts.choose();	 // xili
 		});
 		$( '#find-posts .find-box-search :input' ).keypress( function( event ) {

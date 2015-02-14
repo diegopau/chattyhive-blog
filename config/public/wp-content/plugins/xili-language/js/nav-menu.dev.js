@@ -1,6 +1,6 @@
+// part of package xl 2.14.2
 jQuery(document).ready(function($) { 
 	$('#update-nav-menu').bind('click', function(e) {
-		//alert ('inseert');
 		if ( e.target && e.target.className && -1 != e.target.className.indexOf('item-edit')) {
 			var inputclass = '';
 			var inputvalue = '';
@@ -18,7 +18,6 @@ jQuery(document).ready(function($) {
 						});
 					});
 					
-					//$(this).attr("style", "border:red solid 1px") ;
 				});
 				
 				
@@ -74,34 +73,45 @@ jQuery(document).ready(function($) {
 						
 					});
 					
-					//$(this).attr("style", "border:red solid 1px") ;
 				});
-				
-				menuvalues = inputvalue3.split('-') ;
+
+				menuvalues = inputvalue3.split(xili_data.strings[9]) ; // -- separator better than _
 				menuvalues.shift();
-				menulangs = inputvalue2.split('menu-wo-') ;
+				if ( -1 != inputvalue2.search('menu-wlid-') ) {
+					menulangs = inputvalue2.split('menu-wlid-') ; // since 2.14.2
+					newmode = true;
+				} else if ( -1 != inputvalue2.search('menu-wo-') ) {
+					menulangs = inputvalue2.split('menu-wo-') ;
+					newmode = false;
+				}
+
 				menulangs.shift();
+
 				valtable = "";
 				
 				var obj = {};
    				for (var index in menulangs){
         			obj[menulangs[index]] = menuvalues[index];
-        			if ( menuvalues[index] != '0' ) {
+        			if ( menuvalues[index] != '' ) {
         				
         				$.ajax({
-	      			url: ajaxurl, // this is a variable that WordPress has already defined for us
-	      			type: 'POST',
-	      			async: false,
-	      			cache: false,
-	      			data: {
-	         			action: 'get_menu_infos', // this is the name of our WP AJAX function that we'll set up next
-	         			menu_id: menuvalues[index],
-	      			},
-	      			success : function(x) { valtable = valtable + x },
-		 			// error : function(r) { valtable = valtable + 'error' + r }
-	   			});
-        				
-						valtable = valtable + ' = [' + menulangs[index].replace('-', '') + '] <small>( ' + menuvalues[index] + ' )</small><br />';
+	      					url: ajaxurl, // this is a variable that WordPress has already defined for us
+	      					type: 'POST',
+	      					async: false,
+	      					cache: false,
+	      					data: {
+	         					action: 'get_menu_infos', // this is the name of our WP AJAX function that we'll set up next
+	         					menu_slug: menuvalues[index],
+	      					},
+	      					success : function(x) { valtable = valtable + x },
+
+	   					});
+        				if ( newmode ){
+        					thelang = xili_data.strings[10][menulangs[index].replace('-', '')];
+        				} else {
+        					thelang = menulangs[index].replace('-', '');
+        				}
+        				valtable = valtable + ' = [' + thelang + '] <small>( ' + menuvalues[index] + ' )</small><br />';
         			}
    				}
    				

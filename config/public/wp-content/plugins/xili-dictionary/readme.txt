@@ -3,8 +3,8 @@ Contributors: michelwppi, MS dev.xiligroup
 Donate link: http://dev.xiligroup.com/
 Tags: theme,post,plugin,posts, page, category, admin,multilingual,taxonomy,dictionary, .mo file, .po file, l10n, i18n, language, international,wpmu,plural,multisite, WP network, translation
 Requires at least: 3.6.1
-Tested up to: 3.8.1
-Stable tag: 2.6.1
+Tested up to: 4.1
+Stable tag: 2.10.0
 License: GPLv2
 
 
@@ -14,18 +14,18 @@ xili-dictionary is a dictionary storable in CPT and terms to create and translat
 
 **xili-dictionary is a dictionary storable in custom post type (CPT) and terms (custom taxonomy) to create, update and translate .po files or .mo files of current theme folder and of current plugins.**
 
-* xili-dictionary is a plugin (compatible with xili-language) to build a multilingual dictionary saved in the post tables of WordPress as CPT.
+* xili-dictionary is a plugin (compatible with plugin xili-language) to build a multilingual dictionary saved in the post tables of WordPress as CPT to build .mo files (used online by WP website), .po files (file assigned to a language and used by translator, text format of compiled .mo), and now .pot files.
 * With this dictionary, collecting terms from taxonomies (title, description), from bloginfos, from wp_locale, from current theme - international terms with ` _e(), __() or _n() or _x(),  _ex(), _nx(),... ` and other functions as in I10n.php - , it is possible to create and update .mo file in the current theme folder and current plugins.
 * By importing .mo files, it is possible to regenerate readable .po files and enrich translation tables.
-* xili-dictionary is full compatible with [xili-language](http://wordpress.org/extend/plugins/xili-language/) plugin and [xili-tidy-tags](http://wordpress.org/extend/plugins/xili-tidy-tags/) plugin.
+* xili-dictionary is full compatible with [xili-language](http://wordpress.org/extend/plugins/xili-language/) plugin and [xili-tidy-tags](http://wordpress.org/extend/plugins/xili-tidy-tags/) plugin. Also compatible with [xili re/un-attach media](http://wordpress.org/extend/plugins/xili-re-un-attach-media/) !
 
 
 = roadmap =
-* code source cleaning
+* code source renewed with latest WP tools available in WP 4.1 Dinah
 * readme rewritting
 * writer management
 
-= Version 2.6.1 (updated 2014-03-08) =
+= Version 2.10.0 (updated 2014-12-18) =
 see [Changelog tab](http://wordpress.org/extend/plugins/xili-dictionary/changelog/).
 
 == Installation ==
@@ -47,7 +47,7 @@ More infos will be added progressively in a wiki [here](http://wiki.xiligroup.or
 = What about WP multisite (or network - former named WPMU) and the trilogy ? =
 [xili-language](http://wordpress.org/extend/plugins/xili-language/), [xili-tidy-tags](http://wordpress.org/extend/plugins/xili-tidy-tags/), [xili-dictionary](http://wordpress.org/extend/plugins/xili-dictionary/)
 
-Since WP 3.0-alpha, if multisite is activated, the trilogy is compatible and will include progressively some improvements dedicaded especially for WP network context. Future specific docs will be available for registered webmasters to describe where mo files where saved.
+Since WP 3.0, if multisite is activated, the trilogy is compatible and will include progressively some improvements dedicaded especially for WP network context.
 
 = Where can I see websites using this plugin ? =
 dev.xiligroup.com [here](http://dev.xiligroup.com/?p=187 "why xili-language ?") and example child themes below:
@@ -107,6 +107,11 @@ msgstr[1] "commentaires"
 xili-dictionary is able to import a .mo of the target language and rebuild a .po editable in backend or a text editor. Example: if it_IT is in your language list, it_IT.mo can be imported, completed by webmaster and export as it_IT.po text file in languages sub-folder of the theme (as text backup).
 
 
+= What is the differences with poEdit application ? =
+
+[Poedit](http://poedit.net) is a standalone desktop application. Poedit offers the ways to translate apps and sites (that use gettext). This application is used by us to create localization of this and other plugins.
+xili-dictionary is online and based on WP Core and essentially made for files used by WP (theme, plugin, custom terms of site...). For technicians, some advantages: possible to recover .mo files, to translate online items, to export .pot files, and more...
+
 
 == Screenshots ==
 
@@ -132,10 +137,41 @@ See [dev.xiligroup forum plugins forum](http://forum2.dev.xiligroup.com/forum.ph
 
 See also the [Wordpress plugins forum](http://wordpress.org/tags/xili-dictionary/).
 
-© 2009-2014 MS - dev.xiligroup.com
+© 2009-2015 MS - dev.xiligroup.com
 
 == Changelog ==
-
+= 2.10.0 (2014-12-18) =
+* collects comment-template.php msgids
+* better queries for WP 4.1 Dinah
+= 2.9.2 (2014-12-16 17:00) =
+* fixes WPLANG (obsolete in WP4.0)
+* fixes .po and .pot export in current child theme if files dont exists
+= 2.9.1 (2014-07-01) =
+* fixes js for file state of local- files in multisite install.
+* Better import from local- mo file
+* During deletion, if a msgid has more than one origin, the msgid is not deleted, only origin is unassigned.
+= 2.9.0 (2014-06-29) =
+* better message when creating or download or file writing,
+* import from source files (current theme, plugins), a good way if no pot files delivered by authors,
+* fixe uppercase content (BINARY),
+* more local js for ui.
+= 2.8.0 (2014-06-05) =
+* can now create pot file,
+* improvement in export, UI and texts.
+* fixes
+= 2.7.2 (2014-06-02) =
+* disable media button,
+* subtitle of msg,
+* formatted title (based on id).
+= 2.7.1 (2014-05-26) =
+* clean code
+* fixes issue in download
+* improve detection of existing msgid with context during manual creation. Need draft step to define context.
+= 2.7.0 (2014-05-16) =
+* able to save local-xx_XX (po or mo) in wp-content/languages/themes/ (WP_LANG_DIR)
+= 2.6.1 (2014-03-08) =
+* fixes issues when importing plural form.
+* tested with WP 3.9-RC1
 = 2.6.1 (2014-03-08) =
 * fixes issues with pot file name and verify no msgstr when importing pot file.
 * clean obsolete codes
@@ -217,4 +253,4 @@ See also the [Wordpress plugins forum](http://wordpress.org/tags/xili-dictionary
 * between 0.9.3 and 1.4.4 see version 1.4.4 - 20120219
 = 0.9.3 = first public release (beta)
 
-© 20140308 - MS - dev.xiligroup.com
+© 20141218 - MS - dev.xiligroup.com
