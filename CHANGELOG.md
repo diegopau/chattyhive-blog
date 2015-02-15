@@ -1,3 +1,4 @@
+
 master
   * heroku-sendgrid now pulls name/email from wpdb instead of heroku config
     EMAIL_REPLY_TO, EMAIL_FROM, and EMAIL_NAME are deprecated
