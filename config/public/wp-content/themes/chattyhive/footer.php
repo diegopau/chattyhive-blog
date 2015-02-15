@@ -9,7 +9,7 @@
 </div>
 
   <div id="preload">
-   <img src="http://blog.chattyhive.com/wp-content/themes/inspirin/images/isotipo_sombreado_sin_gradiente_transparente-02.png" width="1" height="1" alt="isotipo amarillo" />
+   <img src="http://blog.chattyhive.com/wp-content/themes/chattyhive/images/isotipo_sombreado_sin_gradiente_transparente-02.png" width="1" height="1" alt="isotipo amarillo" />
   </div>
 
 <aside class="ft-backtop">

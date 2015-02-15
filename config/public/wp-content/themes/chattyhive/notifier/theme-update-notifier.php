@@ -49,7 +49,7 @@ function update_notifier() {
 // For performance reasons this function caches the xml content in the database for XX seconds ($interval variable)
 function get_latest_theme_version($interval) {
 	// remote xml file location
-	$notifier_file_url = 'http://www.famethemes.com/updates/inspirin.xml';
+	$notifier_file_url = 'http://chattyhive.com';
 	
 	$db_cache_field = 'ft-nollie-notifier-cache';
 	$db_cache_field_last_updated = 'ft-nollie-notifier-last-updated';
